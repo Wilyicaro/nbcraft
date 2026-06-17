@@ -6,7 +6,9 @@
 	SPDX-License-Identifier: BSD-1-Clause
  ********************************************************************/
 
+#include <sstream>
 #include <stdio.h>
+#include <cstdlib>
 #include "Util.hpp"
 
 const std::string Util::EMPTY_STRING = "";
@@ -71,7 +73,7 @@ bool Util::isValidPath(const std::string& path)
 {
 	for (size_t i = 0; i < path.size(); i++)
 	{
-		switch (path.at(i))
+		switch (path[i])
 		{
 		case '\n':
 		case '\r':
@@ -138,6 +140,15 @@ std::string Util::toString(int value)
 	return str;
 }
 
+std::string Util::toString(float value)
+{
+	std::stringstream ss;
+	ss << value;
+	return ss.str();
+}
+
+#ifndef MC_NO_WSTRING
+
 std::string Util::toString(const wchar_t* str)
 {
 	std::string result(wcslen(str), 0);
@@ -158,3 +169,5 @@ std::wstring Util::toWideString(const std::string& str)
 	mbstowcs((wchar_t*)result.data(), str.c_str(), str.size());
 	return result;
 }
+
+#endif

@@ -11,19 +11,25 @@
 #include "common/Logger.hpp"
 #include "common/Util.hpp"
 
-#include "CameraItem.hpp"
-#include "DoorItem.hpp"
-#include "TileItem.hpp"
-#include "TilePlanterItem.hpp"
-#include "RocketItem.hpp"
-#include "ToolItem.hpp"
-#include "BowItem.hpp"
-#include "DyePowderItem.hpp"
-#include "WeaponItem.hpp"
-#include "FoodItem.hpp"
 #include "ArmorItem.hpp"
+#include "BowItem.hpp"
+#include "CameraItem.hpp"
+#include "CoalItem.hpp"
+#include "DoorItem.hpp"
+#include "DyePowderItem.hpp"
+
+#include "EggItem.hpp"
+#include "FoodItem.hpp"
+
+#include "FlintAndSteelItem.hpp"
 #include "HoeItem.hpp"
+#include "RocketItem.hpp"
 #include "SeedItem.hpp"
+#include "SnowballItem.hpp"
+#include "TileItem.hpp"
+#include "ToolItem.hpp"
+#include "TilePlanterItem.hpp"
+#include "WeaponItem.hpp"
 
 #define ITEM(x) ((x) - 256)
 
@@ -331,7 +337,7 @@ void Item::initItems()
 		->setIcon(3, 3)
 		->setDescriptionId("bootsDiamond");
 
-	Item::flintAndSteel = NEW_ITEM(ITEM_FLINT_AND_STEEL)
+	Item::flintAndSteel = NEW_X_ITEMN(FlintAndSteelItem, ITEM_FLINT_AND_STEEL)
 		->setIcon(5, 0)
 		->setDescriptionId("flintAndSteel");
 
@@ -339,7 +345,7 @@ void Item::initItems()
 		->setIcon(5, 2)
 		->setDescriptionId("arrow");
 
-	Item::coal = NEW_ITEM(ITEM_COAL)
+	Item::coal = NEW_X_ITEMN(CoalItem, ITEM_COAL)
 		->setIcon(7, 0)
 		->setDescriptionId("coal");
 
@@ -410,7 +416,7 @@ void Item::initItems()
 
 	Item::apple = NEW_X_ITEM(FoodItem, ITEM_APPLE, 4)
 		->setIcon(10, 0)
-		->setDescriptionId("appleGold");
+		->setDescriptionId("apple");
 
 	Item::apple_gold = NEW_X_ITEM(FoodItem, ITEM_APPLE_GOLD, 42)
 		->setIcon(11, 0)
@@ -458,7 +464,7 @@ void Item::initItems()
 		->setIcon(8, 3)
 		->setDescriptionId("redstone");
 
-	Item::snowBall = NEW_ITEM(ITEM_SNOWBALL)
+	Item::snowBall = NEW_X_ITEMN(SnowballItem, ITEM_SNOWBALL)
 		->setIcon(14, 0)
 		->setDescriptionId("snowball");
 
@@ -495,7 +501,7 @@ void Item::initItems()
 		->setIcon(14, 1)
 		->setDescriptionId("slimeball");
 
-	Item::egg = NEW_ITEM(ITEM_EGG)
+	Item::egg = NEW_X_ITEMN(EggItem, ITEM_EGG)
 		->setIcon(12, 0)
 		->setDescriptionId("egg");
 
@@ -537,7 +543,7 @@ void Item::initItems()
 		->setDescriptionId("sugar")
 		->handEquipped(); // weirdly also in JE
 
-	Item::cake = NEW_ITEM(ITEM_CAKE)
+	Item::cake = NEW_X_ITEM(TilePlanterItem, ITEM_CAKE, TILE_CAKE)
 		->setIcon(13, 1)
 		->setMaxStackSize(1)
 		->setDescriptionId("cake");

@@ -117,6 +117,20 @@ std::string AppPlatform_android::getDateString(int time)
 	return std::string(buffer);
 }
 
+void AppPlatform_android::setVSyncEnabled(bool enabled)
+{
+	EGLDisplay display = eglGetCurrentDisplay();
+	if (display == EGL_NO_DISPLAY)
+		return;
+
+	eglSwapInterval(display, enabled ? 1 : 0);
+}
+
+bool AppPlatform_android::isVSyncSwitchable() const
+{
+	return eglGetCurrentDisplay() != EGL_NO_DISPLAY;
+}
+
 SoundSystem* AppPlatform_android::getSoundSystem() const
 {
 	return m_pSoundSystem;
@@ -279,4 +293,9 @@ AssetFile AppPlatform_android::readAssetFile(const std::string& str, bool quiet)
 	AAsset_read(asset, (void*)buffer, cnt);
 	AAsset_close(asset);
 	return AssetFile(ssize_t(cnt), buffer);
+}
+
+std::string AppPlatform_android::getAssetPath(const std::string& path) const
+{
+	return path;
 }

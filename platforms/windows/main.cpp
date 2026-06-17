@@ -134,11 +134,9 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 {
 #if defined(_DEBUG) && defined(MOD_POPOUT_CONSOLE)
 	AllocConsole();
-	FILE* ostream;
-	FILE* istream;
-	freopen_s(&ostream, "CONOUT$", "w", stdout);
-	freopen_s(&istream, "CONIN$", "r", stdin);
-	SetConsoleTitle("ReMinecraftPE Debug Console");
+	freopen("CONOUT$", "w", stdout);
+	freopen("CONIN$", "r", stdin);
+	SetConsoleTitle(C_GAME_NAME " Debug Console");
 #endif
 
 	// This initializes the Logger singleton to use the Windows-specific variant
@@ -153,13 +151,28 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpCmdLine
 	if (!g_AppPlatform.initGraphics(Minecraft::width, Minecraft::height))
 		goto _cleanup;
 
+	g_AppPlatform.setVSyncEnabled(true);
+
 	g_pApp = new NinecraftApp;
 	g_pApp->m_pPlatform = &g_AppPlatform;
 
 	// Storage Directory
 	{
-		std::string storagePath = getenv("APPDATA");
-		storagePath += "/.reminecraftpe";
+		std::string storagePath;
+		const char *appdata = getenv("APPDATA");
+		if (!appdata)
+		{
+			const char *windir = getenv("WINDIR");
+			if (windir)
+				storagePath = (std::string)windir + "\\Application Data";
+			else
+				storagePath = ".";
+		}
+		else
+		{
+			storagePath = appdata;
+		}
+		storagePath += "/" C_STORAGE_DIR;
 
 		if (!storagePath.empty())
 			createFolderIfNotExists(storagePath.c_str());

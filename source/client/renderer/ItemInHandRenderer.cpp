@@ -302,7 +302,7 @@ void ItemInHandRenderer::renderScreenEffect(float a)
 
     if (player->isUnderLiquid(Material::water))
     {
-        if (textures->loadAndBindTexture("/misc/water.png", false))
+        if (textures->loadAndBindTexture("misc/water.png", false))
         {
             renderWater(a);
         }
@@ -352,7 +352,7 @@ void ItemInHandRenderer::renderFire(float a)
 		float texV_2 = (texY + 15.99f) / 256.0f;
 
 		matrix->translate(Vec3(float(-(i * 2 - 1)) * 0.24f, -0.3f, 0.0f));
-		matrix->rotate(float(-(i * 2 - 1)) * 10.0f, Vec3::UNIT_Y);
+		matrix->rotate(float((i * 2 - 1)) * 10.0f, Vec3::UNIT_Y);
 
         ScreenRenderer& screenRenderer = ScreenRenderer::singleton();
         screenRenderer.blitRaw(-0.5f, 0.5f, -0.5f, 0.5f, -0.5f, texU_1, texU_2, texV_1, texV_2);
@@ -396,7 +396,7 @@ void ItemInHandRenderer::tick()
 
 	ItemStack& item = m_pMinecraft->m_pLocalPlayer->m_pInventory->getSelectedItem();
 
-	bool bSameItem = m_pMinecraft->m_pLocalPlayer->m_pInventory->m_selectedSlot == m_lastSlot && m_selectedItem == item;
+	bool bSameItem = m_pMinecraft->m_pLocalPlayer->m_pInventory->m_selectedStackId == m_lastSlot && m_selectedItem == item;
 
 	if (item.isEmpty() && m_selectedItem.isEmpty())
 		bSameItem = true;
@@ -424,7 +424,7 @@ void ItemInHandRenderer::tick()
 	if (m_height < 0.1f)
 	{
 		m_selectedItem = ItemStack(item);
-		m_lastSlot = m_pMinecraft->m_pLocalPlayer->m_pInventory->m_selectedSlot;
+		m_lastSlot = m_pMinecraft->m_pLocalPlayer->m_pInventory->m_selectedStackId;
 	}
 }
 

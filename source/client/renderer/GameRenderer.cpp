@@ -6,6 +6,8 @@
 	SPDX-License-Identifier: BSD-1-Clause
  ********************************************************************/
 
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
 #include "GameRenderer.hpp"
 #include "GameMods.hpp"
 #include "client/app/Minecraft.hpp"
@@ -77,6 +79,8 @@ GameRenderer::GameRenderer(Minecraft* pMinecraft) :
 #ifdef FEATURE_GFX_SHADERS
 	mce::GlobalConstantBuffers::getInstance().init();
 #endif
+
+	m_pMinecraft->getOptions()->m_gamma.apply();
 }
 
 GameRenderer::~GameRenderer()
@@ -154,7 +158,7 @@ void GameRenderer::_renderDebugOverlay(float a)
 	Font& font = *m_pMinecraft->m_pFont;
 
 	std::stringstream debugText;
-	debugText << "ReMinecraftPE " << m_pMinecraft->getVersionString();
+	debugText << C_GAME_NAME " " << m_pMinecraft->getVersionString();
 	debugText << " (" << m_shownFPS << " fps, " << m_shownChunkUpdates << " chunk updates)" << "\n";
 
 	/*
@@ -312,7 +316,7 @@ void GameRenderer::moveCameraToPlayer(Matrix& matrix, float f)
 	if (m_pMinecraft->getOptions()->m_thirdPerson.get())
 	{
 		float v11 = field_30 + (field_2C - field_30) * f;
-		if (m_pMinecraft->getOptions()->field_241)
+		if (m_pMinecraft->getOptions()->m_bFixedCamera)
 		{
 			matrix.translate(Vec3::NEG_UNIT_Z * v11);
 			matrix.rotate(field_38 + (field_34 - field_38) * f, Vec3::UNIT_X);
@@ -363,7 +367,7 @@ void GameRenderer::moveCameraToPlayer(Matrix& matrix, float f)
 		matrix.translate(Vec3(0.0f, 0.0f, -0.1f));
 	}
 
-	if (!m_pMinecraft->getOptions()->field_241)
+	if (!m_pMinecraft->getOptions()->m_bFixedCamera)
 	{
 		matrix.rotate(pMob->m_oRot.y + f * (pMob->m_rot.y - pMob->m_oRot.y), Vec3::UNIT_X);
 		matrix.rotate(pMob->m_oRot.x + f * (pMob->m_rot.x - pMob->m_oRot.x) + 180.0f, Vec3::UNIT_Y);
@@ -425,7 +429,7 @@ void GameRenderer::bobView(Matrix& matrix, float f)
 	float f1 = Mth::Lerp(player->m_oBob, player->m_bob, f);
 	float f2 = Mth::Lerp(player->m_oTilt, player->m_tilt, f);
 	// @NOTE: Multiplying by M_PI inside of the paren makes it stuttery for some reason? Anyways it works now :)
-	float f3 = -(player->m_walkDist + (player->m_walkDist - player->field_90) * f) * float(M_PI);
+	float f3 = -(player->m_walkDist + (player->m_walkDist - player->m_walkDistO) * f) * float(M_PI);
 	float f4 = Mth::sin(f3);
 	float f5 = Mth::cos(f3);
 	float f6 = Mth::cos(f3 - 0.2f);
@@ -613,7 +617,7 @@ void GameRenderer::render(const Timer& timer)
 				float v20 = mult1 * 0.25f * (v17 - v18);
 				float v21 = v19 + (v20 - v19) * 0.5f;
 				field_1C = v21;
-				if ((v20 <= 0.0 || v20 <= v21) && (v20 >= 0.0 || v20 >= v21))
+				if ((v20 <= 0.0f || v20 <= v21) && (v20 >= 0.0f || v20 >= v21))
 					v21 = mult1 * 0.25f * (v17 - v18);
 				float v22 = d.y + field_20;
 				field_18 = v18 + v21;
@@ -622,7 +626,7 @@ void GameRenderer::render(const Timer& timer)
 				float v24 = mult1 * 0.15f * (v22 - v23);
 				float v25 = field_28 + (v24 - field_28) * 0.5f;
 				field_28 = v25;
-				if ((v24 <= 0.0 || v24 <= v25) && (v24 >= 0.0 || v24 >= v25))
+				if ((v24 <= 0.0f || v24 <= v25) && (v24 >= 0.0f || v24 >= v25))
 					v25 = v24;
 				field_24 = v23 + v25;
 			}
@@ -643,7 +647,7 @@ void GameRenderer::render(const Timer& timer)
 	int mouseY = -9999;
 	bool bMouseData = false;
 
-	if (m_pMinecraft->isTouchscreen())
+	if (m_pMinecraft->useTouchscreen())
 	{
 		int pointerId = Multitouch::getFirstActivePointerIdExThisUpdate();
 		if (pointerId >= 0)
@@ -852,7 +856,7 @@ void GameRenderer::renderPointer(const MenuPointer& pointer)
 	Textures& textures = *m_pMinecraft->m_pTextures;
 
 	MatrixStack::Ref mtx = MatrixStack::World.push();
-	mtx->translate(Vec3(pointer.x, pointer.y, 0));
+	mtx->translate(Vec3(pointer.x, pointer.y, 0.0f));
 
 	if (m_pMinecraft->m_pScreen && m_pMinecraft->m_pScreen->m_uiTheme == UI_CONSOLE)
 		mtx->scale(2.0f);
@@ -873,9 +877,19 @@ void GameRenderer::setLevel(Level* pLevel, Dimension* pDimension)
 	//_tickLightTexture(pDimension, 1.0f);
 }
 
+void GameRenderer::setGamma(float gamma)
+{
+	if (!mce::RenderContextImmediate::hasDevice())
+		return;
+
+	mce::RenderContext& renderContext = mce::RenderContextImmediate::get();
+	renderContext.setGamma(gamma * (INT16_MAX+1));
+}
+
 void GameRenderer::onGraphicsReset()
 {
-
+	// We might not need this long-term, but putting it here just in case
+	m_pMinecraft->getOptions()->m_gamma.apply();
 }
 
 void GameRenderer::pick(float f)
@@ -885,7 +899,7 @@ void GameRenderer::pick(float f)
 
 	Mob* pMob = m_pMinecraft->m_pCameraEntity;
 	HitResult& mchr = m_pMinecraft->m_hitResult;
-	float dist = m_pMinecraft->m_pGameMode->getBlockReachDistance();
+	float dist = m_pMinecraft->getLocalPlayerGameMode()->getBlockReachDistance();
 	bool isFirstPerson = !m_pMinecraft->getOptions()->m_thirdPerson.get();
 	Vec3 touchPosNear, touchPosFar;
 	bool bUseTouchCoords = false;
@@ -980,7 +994,7 @@ void GameRenderer::pick(float f)
 	if (mchr.m_hitType != HitResult::NONE)
 		dist = mchr.m_hitPos.distanceTo(mobPos);
 
-	float maxEntityDist = m_pMinecraft->m_pGameMode->getEntityReachDistance();
+	float maxEntityDist = m_pMinecraft->getLocalPlayerGameMode()->getEntityReachDistance();
 	/*if (m_pMinecraft->m_pGameMode->isCreativeType())
 		dist = 7.0f;
 	else */if (dist > maxEntityDist)

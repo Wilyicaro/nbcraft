@@ -29,6 +29,7 @@ class Entity;
 class Mob;
 class Player;
 class LiquidTile;
+class TileEntity;
 
 class Tile
 {
@@ -48,10 +49,10 @@ public: // types
 	};
 	struct SoundType
 	{
-		std::string m_name;
+		std::string name;
 		float volume, pitch;
 
-		SoundType(const std::string& name, float volume, float pitch) : m_name(name), volume(volume), pitch(pitch) {}
+		SoundType(const std::string& name, float volume, float pitch) : name(name), volume(volume), pitch(pitch) {}
 	};
 
 public: // virtual functions
@@ -76,6 +77,7 @@ public: // virtual functions
 	virtual bool isSolidRender() const;
 	virtual bool mayPick() const;
 	virtual bool mayPick(TileData, bool) const;
+	virtual bool hasTileEntity() const;
 	virtual bool mayPlace(const Level*, const TilePos& pos) const;
 	virtual int getTickDelay() const;
 	virtual void tick(Level*, const TilePos& pos, Random*);
@@ -240,15 +242,22 @@ public: // static variables
 		* glowstone,
 		* web,
 		* fence,
+		* fenceGate,
 		* craftingTable,
-		* crops;
+		* crops,
+		* furnace,
+		* furnaceLit,
+		* musicBlock,
+		* chest,
+		* cake,
+		* trapDoor;
 
 public:
 	int m_TextureFrame;
 	TileID m_ID;
 	AABB m_aabb;
 	const SoundType* m_pSound;
-	float field_28;
+	float m_gravity; // only affects particle gravity at the moment
 	Material* m_pMaterial;
 	float m_friction;
 	float m_hardness;

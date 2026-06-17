@@ -59,8 +59,8 @@ static void initPlatform()
 
     // disable buffering for stdout, so we don't lose our logs when abort is called
     setbuf(stdout, NULL);
-    freopen("reminecraftpe.stdout.log", "w", stdout);
-    freopen("reminecraftpe.stderr.log", "w", stderr);
+    freopen("nbcraft.stdout.log", "w", stdout);
+    freopen("nbcraft.stderr.log", "w", stderr);
 #endif
 }
 
@@ -69,7 +69,6 @@ static void preInitGraphics()
 #if MCE_GFX_API_OGL
     SDL_GL_SetAttribute(SDL_GL_DEPTH_SIZE, 24);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-#else
 #endif
 }
 
@@ -78,7 +77,7 @@ static void initGraphics()
 #if MCE_GFX_API_OGL
     if (!mce::Platform::OGL::InitBindings())
     {
-        LOG_E("Error initializing GL extensions. OpenGL 2.0 or later is required.");
+        LOG_E(mce::Platform::OGL::ERROR_MSG);
         exit(EXIT_FAILURE);
     }
 #endif
@@ -92,7 +91,7 @@ static std::string getStoragePath()
     tmp = getenv("APPDATA");
     if (tmp)
         path = tmp;
-#elif defined(MC_PLATFORM_MAC)
+#elif MC_PLATFORM_MAC
     tmp = getenv("HOME");
     if (tmp)
         path = std::string(tmp) + "/Library/Application Support";
@@ -112,7 +111,7 @@ static std::string getStoragePath()
 
     if (!path.empty())
         path += "/";
-    path += ".reminecraftpe";
+    path += C_STORAGE_DIR;
 
     return path;
 }
@@ -171,6 +170,23 @@ static void handle_events()
                 break;
             }
             case SDL_MOUSEBUTTONDOWN:
+                if (event.button.button == SDL_BUTTON_WHEELUP)
+                {
+                    const float scale = g_fPointToPixelScale;
+                    float x = event.button.x * scale;
+                    float y = event.button.y * scale;
+                    Mouse::feed(MOUSE_BUTTON_SCROLLWHEEL, false, x, y);
+                    break;
+                }
+                else if (event.button.button == SDL_BUTTON_WHEELDOWN)
+                {
+                    const float scale = g_fPointToPixelScale;
+                    float x = event.button.x * scale;
+                    float y = event.button.y * scale;
+                    Mouse::feed(MOUSE_BUTTON_SCROLLWHEEL, true, x, y);
+                    break;
+                }
+                // fall through
             case SDL_MOUSEBUTTONUP:
             {
                 const float scale = g_fPointToPixelScale;
@@ -268,7 +284,7 @@ int main(int argc, char* argv[])
     
     SDL_EnableUNICODE(SDL_TRUE);
 
-	SDL_WM_SetCaption("ReMinecraftPE", nullptr);
+	SDL_WM_SetCaption(C_GAME_NAME, nullptr);
     //LOG_I("Setting SDL video mode...");
     // XENON: width and height need to be accurate to what's already set by the console,
     // or else libXenon will crash.

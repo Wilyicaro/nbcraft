@@ -43,9 +43,7 @@ private:
 	void _levelGenerated();
 	void _resetPlayer(Player* player);
 	GameMode* _createGameMode(GameType gameType, Level& level);
-
-protected:
-	void _reloadInput();
+	void _initGameModes(Level& level);
 
 public:
 	int getLicenseId();
@@ -79,15 +77,20 @@ public:
 	void handlePointerPressedButtonRelease();
 	void handleKeyboardClosed();
 	void resetInput();
+	void reloadInput();
 	void sendMessage(const std::string& message);
 	void respawnPlayer();
 	void freeResources(bool bCopyMap);
 	std::string getVersionString(const std::string& str = Util::EMPTY_STRING) const;
 	bool isTouchscreen() const;
+	bool useTouchscreen() const;
 	bool useSplitControls() const;
 	bool useController() const;
 
 	void setGameMode(GameType gameType);
+	GameMode* getLevelGameMode() const;
+	GameMode* getPlayerGameMode(Player& player) const;
+	GameMode* getLocalPlayerGameMode() const;
 
 	void update() override;
 	void init() override;
@@ -122,6 +125,7 @@ private:
     // Value provided by the OS
     static float _renderScaleMultiplier;
 	static InputType::Name _inputType;
+
 public:
     static float getRenderScaleMultiplier() { return _renderScaleMultiplier; }
     static void setRenderScaleMultiplier(float value) { _renderScaleMultiplier = value; }
@@ -145,7 +149,7 @@ public:
 	GameRenderer* m_pGameRenderer;
 	ParticleEngine* m_pParticleEngine;
 	SoundEngine* m_pSoundEngine;
-	GameMode* m_pGameMode;
+	GameMode* m_gameModes[GAME_TYPES_COUNT];
 	Textures* m_pTextures;
 	Font* m_pFont;
 	RakNetInstance* m_pRakNetInstance;
@@ -170,6 +174,7 @@ public:
 	int m_progressPercent;
 	Timer m_timer;
 	bool m_bPreparingLevel;
+	bool m_bPendingResize;
 	LevelStorageSource* m_pLevelStorageSource; // TODO
 	int field_D9C;
 	int field_DA0;

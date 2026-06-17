@@ -46,7 +46,6 @@ static void preInitGraphics()
 #endif
 	// Double-Buffering
 	SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-#else
 #endif
 }
 
@@ -63,26 +62,19 @@ static void initGraphics()
 		exit(EXIT_FAILURE);
 	}
 
-    // Enable V-Sync
-    // Not setting this explicitly results in undefined behavior
-    if (SDL_GL_SetSwapInterval(-1) == -1) // Try adaptive
+    // Vsync is controlled through the AppPlatform,
+    // default to no vsync here, let platform set it when needed
+    if (SDL_GL_SetSwapInterval(0) == -1)
     {
-        LOG_W("Adaptive V-Sync is not supported on this platform. Falling back to standard V-Sync...");
-        // fallback to standard
-		if (SDL_GL_SetSwapInterval(1) == -1)
-		{
-			LOG_W("Setting the swap interval for V-Sync is not supported on this platform!");
-		}
+        LOG_W("Setting the swap interval is not supported on this platform!");
     }
 
 	if (!mce::Platform::OGL::InitBindings())
 	{
-		const char* const GL_ERROR_MSG = "Error initializing GL extensions. OpenGL 2.0 or later is required. Update your graphics drivers!";
-		LOG_E(GL_ERROR_MSG);
-		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "OpenGL Error", GL_ERROR_MSG, window);
+		LOG_E(mce::Platform::OGL::ERROR_MSG);
+		SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, "OpenGL Error", mce::Platform::OGL::ERROR_MSG, window);
 		exit(EXIT_FAILURE);
 	}
-#else
 #endif
 }
 
@@ -90,7 +82,6 @@ static void teardownGraphics()
 {
 #if MCE_GFX_API_OGL
 	SDL_GL_DeleteContext(glContext);
-#else
 #endif
 }
 
@@ -315,7 +306,6 @@ static void resize()
 #if MCE_GFX_API_OGL
 	SDL_GL_GetDrawableSize(window,
 		&drawWidth, &drawHeight);
-#else
 #endif
 	
 	int windowWidth, windowHeight;
@@ -399,7 +389,7 @@ int main(int argc, char *argv[])
 #endif
 
 	// Create Window
-	window = SDL_CreateWindow("ReMinecraftPE", SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, Minecraft::width, Minecraft::height, VIDEO_FLAGS);
+	window = SDL_CreateWindow(C_GAME_NAME, SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED, Minecraft::width, Minecraft::height, VIDEO_FLAGS);
 	if (!window)
 	{
 		LOG_E("Unable to create SDL window: %s", SDL_GetError());
@@ -417,7 +407,7 @@ int main(int argc, char *argv[])
 	std::string storagePath;
 #ifdef _WIN32
 	storagePath = getenv("APPDATA");
-#elif defined(MC_PLATFORM_MAC)
+#elif MC_PLATFORM_MAC
 	storagePath = std::string(getenv("HOME")) + "/Library/Application Support";
 #elif defined(__EMSCRIPTEN__) || defined(__SWITCH__)
 	storagePath = "";
@@ -439,7 +429,7 @@ int main(int argc, char *argv[])
 			storagePath = (std::string)xdg_data + "/.local/share";
 	}
 #endif
-	storagePath += "/.reminecraftpe";
+	storagePath += "/" C_STORAGE_DIR;
 	
 	if (!storagePath.empty())
 		createFolderIfNotExists(storagePath.c_str());
@@ -447,6 +437,7 @@ int main(int argc, char *argv[])
 	// Start MCPE
 	g_pAppPlatform = new UsedAppPlatform(storagePath, window);
 	g_pAppPlatform->m_externalStorageDir = storagePath;
+	g_pAppPlatform->setVSyncEnabled(true);
 	g_pApp = new NinecraftApp;
 	g_pApp->m_pPlatform = g_pAppPlatform;
 	g_pApp->init();

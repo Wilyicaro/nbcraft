@@ -1,6 +1,6 @@
 //
 //  PlatformDefinitions.h
-//  Minecraft
+//  NBCraft
 //
 //  Created by Brent on 11/27/23.
 //
@@ -78,6 +78,13 @@
 #define MC_PLATFORM_WINPC 1
 #else
 #define MC_PLATFORM_WINPC 0
+#endif
+
+/* Bell Labs - UNIX (and simalar systems) */
+#if !defined(_WIN32)
+#define MC_PLATFORM_UNIX 1
+#else
+#define MC_PLATFORM_UNIX 0
 #endif
 
 /* Category - PC */

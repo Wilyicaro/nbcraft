@@ -13,7 +13,7 @@
 #include <stdint.h>
 #include <stdarg.h>
 #include <assert.h>
-#include <limits>
+#include "compat/Limits.hpp"
 #ifndef _USE_MATH_DEFINES
 #define _USE_MATH_DEFINES
 #endif
@@ -34,6 +34,13 @@
 #endif
 
 #ifdef _WIN32
+
+#ifdef __CRTDLL__
+
+#define gmtime_s __nbc_gmtime_s
+errno_t gmtime_s(struct tm* out, const time_t* timer);
+
+#endif // __CRTDLL__
 
 #if MC_PLATFORM_WINPC
 
@@ -232,7 +239,7 @@ enum eTileID
 	TILE_CLOTH_30,
 	TILE_CLOTH_40,
 	TILE_CLOTH_50,
-	TILE_CLOTH_60,
+	TILE_FENCE_GATE, //TILE_CLOTH_60,
 	TILE_CLOTH_70,
 	TILE_CLOTH_01,
 	TILE_CLOTH_11,
@@ -531,6 +538,7 @@ enum eRenderShape
 	SHAPE_RAIL,
 	SHAPE_STAIRS,
 	SHAPE_FENCE,
+	SHAPE_FENCE_GATE,
 	SHAPE_LEVER,
 	SHAPE_CACTUS,
 	SHAPE_BED,
@@ -545,8 +553,6 @@ typedef uint8_t TileID;
 // Rename "Tile" to "TileType"
 // Rename "FullTile" to "Tile"
 typedef uint8_t TileData;
-
-typedef uint16_t SlotID;
 
 #define SAFE_DELETE(ptr) do { if (ptr) delete ptr; } while (0)
 #define SAFE_DELETE_ARRAY(ptr) do { if (ptr) delete[] ptr; } while (0)

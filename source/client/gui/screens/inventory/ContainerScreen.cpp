@@ -1,17 +1,21 @@
+#include <cfloat>
+
 #include "client/gui/screens/inventory/ContainerScreen.hpp"
 #include "client/locale/Language.hpp"
 #include "client/renderer/Lighting.hpp"
 #include "client/renderer/entity/ItemRenderer.hpp"
 #include "renderer/ShaderConstants.hpp"
-#include <cfloat>
 
-ContainerScreen::ContainerScreen(ContainerMenu* menu) :
-    m_pMenu(menu),
-    m_imageWidth(176),
-    m_imageHeight(166),
-    m_leftPos(0),
-    m_topPos(0),
-    m_timeSlotDragged(0)
+#define C_TOUCH_STACK_SPLIT_START_TIME 250 // 0.25s
+
+ContainerScreen::ContainerScreen(ContainerMenu* menu)
+    : m_pMenu(menu)
+    , m_imageWidth(176)
+    , m_imageHeight(166)
+    , m_leftPos(0)
+    , m_topPos(0)
+    , m_bSplitStackThisTick(false)
+    , m_slotDragStartTime(0)
 {
     m_screenType = SCREEN_UNIVERSAL;
     m_bRenderPointer = true;
@@ -140,7 +144,7 @@ void ContainerScreen::initMenuPointer()
     {
         Slot* slot = *it;
         //@NOTE: Selects the first hotbar slot
-        if (slot->m_slot == 0 && m_pMinecraft->m_pLocalPlayer && slot->m_pContainer == m_pMinecraft->m_pLocalPlayer->m_pInventory)
+        if (slot->m_id == 0 && m_pMinecraft->m_pLocalPlayer && slot->m_pContainer == m_pMinecraft->m_pLocalPlayer->m_pInventory)
         {
             _selectSlot(slot);
             break;
@@ -168,7 +172,7 @@ void ContainerScreen::render(float partialTicks)
     _renderBg(partialTicks);
 
     MatrixStack::Ref matrix = MatrixStack::World.push();
-    matrix->translate(Vec3(m_leftPos, m_topPos, 0.0f));
+    matrix->translate(Vec3(m_leftPos, m_topPos, 0));
     
     _renderLabels();
 
@@ -212,17 +216,20 @@ void ContainerScreen::render(float partialTicks)
         if (!name.empty())
         {
             int w = m_pFont->width(name);
+            int tx = m_menuPointer.x - m_leftPos;
+            int ty = m_menuPointer.y - m_topPos;
             if (m_uiTheme == UI_CONSOLE)
             {
-                int tx = m_menuPointer.x - m_leftPos + 12;
-                int ty = m_menuPointer.y - m_topPos - 28;
-                blitNineSlice(*m_pMinecraft->m_pTextures, ScreenRenderer::POINTER_TEXT_PANEL_SLICES, tx - 6, ty - 10, w * 2 + 12, 33, 8);
-                m_pFont->drawScalableShadow(name, tx, ty, -1);
+                tx += 10;
+                ty -= 32;
+                blitNineSlice(*m_pMinecraft->m_pTextures, ScreenRenderer::POINTER_TEXT_PANEL_SLICES, tx - 6, ty - 6, w * 2 + 12, 34, 8);
+                MatrixStack::Ref tooltipMatrix = MatrixStack::World.push();
+                m_pFont->drawScalableShadow(name, tx, ty + 4, -1);
             }
             else
             {
-                int tx = m_menuPointer.x - m_leftPos + 12;
-                int ty = m_menuPointer.y - m_topPos - 12;
+                tx += 12;
+                ty -= 12;
                 fillGradient(tx - 3, ty - 3, tx + w + 3, ty + 8 + 3, 0xC0000000, 0xC0000000);
                 m_pFont->drawShadow(name, tx, ty, -1);
             }
@@ -236,28 +243,46 @@ void ContainerScreen::render(float partialTicks)
 void ContainerScreen::pointerPressed(const MenuPointer& pointer, MouseButtonType button)
 {
     Screen::pointerPressed(pointer, button);
-    if (m_pMinecraft->isTouchscreen()) return;
-    slotClicked(pointer, button);
+
+    if (m_pMinecraft->useTouchscreen())
+    {
+        if (_findSlot())
+            m_slotDragStartTime = getTimeMs();
+    }
+    else
+    {
+        slotClicked(pointer, button);
+    }
 }
 
 void ContainerScreen::pointerReleased(const MenuPointer& pointer, MouseButtonType button)
 {
     Screen::pointerReleased(pointer, button);
-    if (m_pMinecraft->isTouchscreen() && m_timeSlotDragged < 5)
-        slotClicked(pointer, button);
-    m_timeSlotDragged = 0;
+
+    if (m_pMinecraft->useTouchscreen())
+    {
+        if (!m_bSplitStackThisTick)
+            slotClicked(pointer, button);
+        m_slotDragStartTime = 0.0f;
+        m_bSplitStackThisTick = false;
+    }
 }
 
 void ContainerScreen::handlePointerPressed(bool isPressed)
 {
     Screen::handlePointerPressed(isPressed);
-    if (isPressed && _findSlot())
-        m_timeSlotDragged++;
-    else m_timeSlotDragged = 0;
 
-    if (m_pMinecraft->isTouchscreen() && m_timeSlotDragged % 5 == 0)
+    if (m_pMinecraft->useTouchscreen() && isPressed && m_slotDragStartTime > 0.0f)
     {
-        slotClicked(m_menuPointer, MOUSE_BUTTON_RIGHT);
+        float timeMs = getTimeMs();
+        float timeSinceDragStart = timeMs - m_slotDragStartTime;
+        if (timeSinceDragStart >= C_TOUCH_STACK_SPLIT_START_TIME)
+        {
+            slotClicked(m_menuPointer, MOUSE_BUTTON_RIGHT);
+            m_bSplitStackThisTick = true;
+            // reset timer to now
+            m_slotDragStartTime = timeMs;
+        }
     }
 }
 
@@ -267,18 +292,18 @@ void ContainerScreen::slotClicked(const MenuPointer& pointer, MouseButtonType bu
     {
         Slot* slot = _findSlot(pointer.x, pointer.y);
         bool outside = pointer.x < m_leftPos || pointer.y < m_topPos || pointer.x >= m_leftPos + m_imageWidth || pointer.y >= m_topPos + m_imageHeight;
-        int index = -1;
-        if (slot) index = slot->m_index;
-        if (outside) index = -999;
-        if (index != -1)
-            slotClicked(slot, index, button, index != -999 && quick);
+        Container::SlotID slotId = -1;
+        if (slot) slotId = slot->m_id;
+        if (outside) slotId = -999;
+        if (slotId != -1)
+            slotClicked(slot, slotId, button, slotId != -999 && quick);
     }
 }
 
-void ContainerScreen::slotClicked(Slot* slot, int index, MouseButtonType button, bool quick)
+void ContainerScreen::slotClicked(Slot* slot, Container::SlotID slotId, MouseButtonType button, bool quick)
 {
     _tryPlayInteractSound();
-    m_pMinecraft->m_pGameMode->handleInventoryMouseClick(m_pMenu->m_containerId, index, button, quick, m_pMinecraft->m_pLocalPlayer);
+    m_pMinecraft->getLocalPlayerGameMode()->handleInventoryMouseClick(m_pMenu->m_containerId, slotId, button, quick, m_pMinecraft->m_pLocalPlayer);
 }
 
 void ContainerScreen::slotClicked(const MenuPointer& pointer, MouseButtonType button)
@@ -319,7 +344,7 @@ void ContainerScreen::buttonPressed(const ButtonInfo& button)
 
 const SlotDisplay& ContainerScreen::getSlotDisplay(const Slot& slot) const
 {
-    return m_slotDisplays[slot.m_index];
+    return m_slotDisplays[slot.m_id];
 }
 
 void ContainerScreen::onClose()
@@ -371,5 +396,5 @@ bool ContainerScreen::SlotNavigation::next(int& x, int& y, bool cycle)
 bool ContainerScreen::SlotNavigation::isValid(ID id)
 {
     Slot* hovered = m_pScreen->_findSlot();
-    return !hovered || hovered->m_index != id;
+    return !hovered || hovered->m_id != id;
 }

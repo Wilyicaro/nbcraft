@@ -5,11 +5,13 @@
 #include "screens/PauseScreen.hpp"
 #include "screens/inventory/CraftingScreen.hpp"
 #include "screens/inventory/ChestScreen.hpp"
+#include "screens/inventory/FurnaceScreen.hpp"
 #include "screens/OptionsScreen.hpp"
 #include "screens/CreateWorldScreen.hpp"
 #include "screens/ProgressScreen.hpp"
 #include "screens/CreditsScreen.hpp"
-
+#include "screens/DeathScreen.hpp"
+#include "ScreenChooser_Pocket.hpp"
 #include "ScreenChooser_Console.hpp"
 
 ScreenChooser::ScreenChooser(Minecraft* mc, UITheme uiTheme) :
@@ -52,6 +54,11 @@ void ScreenChooser::pushCraftingScreen(Player* player, const TilePos& pos)
 	m_pMinecraft->setScreen(new CraftingScreen(player->m_pInventory, pos, player->m_pLevel));
 }
 
+void ScreenChooser::pushFurnaceScreen(Player* player, FurnaceTileEntity* furnace)
+{
+	m_pMinecraft->setScreen(new FurnaceScreen(player->m_pInventory, furnace));
+}
+
 void ScreenChooser::pushChestScreen(Player* player, Container* container)
 {
 	m_pMinecraft->setScreen(new ChestScreen(player->m_pInventory, container));
@@ -62,10 +69,17 @@ void ScreenChooser::pushCreditsScreen(Screen* parent)
 	m_pMinecraft->setScreen(new CreditsScreen(parent));
 }
 
+void ScreenChooser::pushDeathScreen()
+{
+	m_pMinecraft->setScreen(new DeathScreen());
+}
+
 ScreenChooser* ScreenChooser::Create(Minecraft* mc)
 {
 	switch (mc->getOptions()->getUiTheme())
 	{
+	case UI_POCKET:
+		return new ScreenChooser_Pocket(mc);
 	case UI_CONSOLE:
 		return new ScreenChooser_Console(mc);
 	default:

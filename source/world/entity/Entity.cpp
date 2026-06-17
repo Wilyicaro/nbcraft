@@ -23,11 +23,11 @@ Random Entity::sharedRandom;
 void Entity::_init()
 {
 	m_bInAChunk = false;
-	field_20 = 0;
-	field_24 = 0;
-	field_28 = 0;
-	field_30 = 1.0f;
+	m_viewScale = 1.0f;
 	m_dimensionId = DIMENSION_OVERWORLD;
+	m_riderId = 0;
+	m_ridingId = 0;
+	m_bRiding = false;
     m_bBlocksBuilding = false;
 	m_pLevel = nullptr;
 	m_tintColor = Color::WHITE;
@@ -44,7 +44,7 @@ void Entity::_init()
 	m_heightOffset = 0.0f;
 	m_bbWidth = 0.6f;
 	m_bbHeight = 1.8f;
-	field_90 = 0.0f;
+	m_walkDistO = 0.0f;
 	m_walkDist = 0.0f;
 	m_bMakeStepSound = true;
 	m_ySlideOffset = 0.0f;
@@ -101,6 +101,35 @@ void Entity::setSharedFlag(SharedFlag flag, bool value)
 	{
 		entityData.set(DATA_SHARED_FLAGS_ID, (int8_t)(var3 & ~(1 << flag)));
 	}
+}
+
+#if MC_PLATFORM_MOBILE
+// 0.35f on 0.1.3, 0.25f on 0.2.1+
+#define C_STEP_SOUND_VOLUME_SCALE 0.25f
+#else
+// Use Java value for everything else
+#define C_STEP_SOUND_VOLUME_SCALE 0.15f
+#endif
+
+void Entity::playStepSound(const TilePos& pos, TileID tileId)
+{
+	Tile* pTile = Tile::tiles[tileId];
+	const Tile::SoundType* sound = nullptr;
+	if (m_pLevel->getTile(pos.above()) == Tile::topSnow->m_ID)
+	{
+		sound = Tile::topSnow->m_pSound;
+	}
+	else if (!pTile->m_pMaterial->isLiquid())
+	{
+		sound = pTile->m_pSound;
+	}
+
+	if (sound != nullptr)
+	{
+		m_pLevel->playSound(this, "step." + sound->name, sound->volume * C_STEP_SOUND_VOLUME_SCALE, sound->pitch);
+	}
+
+	pTile->stepOn(m_pLevel, pos, this);
 }
 
 void Entity::setLevel(Level* pLvl)
@@ -189,7 +218,7 @@ void Entity::move(const Vec3& pos)
 		AABBVector* cubes = m_pLevel->getCubes(this, AABB(m_hitbox).expand(newPos.x, newPos.y, newPos.z));
 
 		for (size_t i = 0; i < cubes->size(); ++i)
-			newPos.y = cubes->at(i).clipYCollide(m_hitbox, newPos.y);
+			newPos.y = (*cubes)[i].clipYCollide(m_hitbox, newPos.y);
 
 		m_hitbox.move(0.0f, newPos.y, 0.0f);
 		if (!m_bSlide && cPosY != newPos.y)
@@ -198,14 +227,14 @@ void Entity::move(const Vec3& pos)
 		bool lastsOnGround = m_bOnGround || (cPosY != newPos.y && cPosY < 0.0);
 
 		for (size_t i = 0; i < cubes->size(); ++i)
-			newPos.x = cubes->at(i).clipXCollide(m_hitbox, newPos.x);
+			newPos.x = (*cubes)[i].clipXCollide(m_hitbox, newPos.x);
 	
 		m_hitbox.move(newPos.x, 0.0f, 0.0f);
 		if (!m_bSlide && cPosX != newPos.x)
 			newPos = Vec3::ZERO;
 
 		for (size_t i = 0; i < cubes->size(); ++i)
-			newPos.z = cubes->at(i).clipZCollide(m_hitbox, newPos.z);
+			newPos.z = (*cubes)[i].clipZCollide(m_hitbox, newPos.z);
 
 		m_hitbox.move(0.0f, 0.0f, newPos.z);
 		if (!m_bSlide && cPosZ != newPos.z)
@@ -222,21 +251,21 @@ void Entity::move(const Vec3& pos)
 			cubes = m_pLevel->getCubes(this, AABB(m_hitbox).expand(cPosX, newPos.y, cPosZ));
 
 			for (size_t i = 0; i < cubes->size(); ++i)
-				newPos.y = cubes->at(i).clipYCollide(m_hitbox, newPos.y);
+				newPos.y = (*cubes)[i].clipYCollide(m_hitbox, newPos.y);
 
 			m_hitbox.move(0.0f, newPos.y, 0.0f);
 			if (!m_bSlide && cPosY != newPos.y)
 				newPos = Vec3::ZERO;
 
 			for (size_t i = 0; i < cubes->size(); ++i)
-				newPos.x = cubes->at(i).clipXCollide(m_hitbox, newPos.x);
+				newPos.x = (*cubes)[i].clipXCollide(m_hitbox, newPos.x);
 
 			m_hitbox.move(newPos.x, 0.0f, 0.0f);
 			if (!m_bSlide && cPosX != newPos.x)
 				newPos = Vec3::ZERO;
 
 			for (size_t i = 0; i < cubes->size(); ++i)
-				newPos.z = cubes->at(i).clipZCollide(m_hitbox, newPos.z);
+				newPos.z = (*cubes)[i].clipZCollide(m_hitbox, newPos.z);
 
 			m_hitbox.move(0.0f, 0.0f, newPos.z);
 			if (!m_bSlide && cPosZ != newPos.z)
@@ -278,30 +307,16 @@ void Entity::move(const Vec3& pos)
 		{
 			m_walkDist = float(m_walkDist + Mth::sqrt(diffX * diffX + diffZ * diffZ) * 0.6f);
 			TilePos tp(m_pos.x, m_pos.y - 0.2f - m_heightOffset, m_pos.z);
-			TileID i = m_pLevel->getTile(tp);
+			TileID tileId = m_pLevel->getTile(tp);
 
 			if (m_pLevel->getTile(tp.below()) == Tile::fence->m_ID)
-				i = Tile::fence->m_ID;
+				tileId = Tile::fence->m_ID;
 
-			if (m_walkDist > m_nextStep && i > 0)
+			if (m_walkDist > m_nextStep && tileId > 0)
 			{
-				m_nextStep = m_walkDist + 1;
+				m_nextStep = (int)m_walkDist + 1;
 
-				const Tile::SoundType* sound = nullptr;
-				// vol is * 0.15f in Java, is quiet for whatever reason, so bumping to 0.20f
-				if (m_pLevel->getTile(tp.above()) == Tile::topSnow->m_ID)
-				{
-					sound = Tile::topSnow->m_pSound;
-				}
-				else if (!Tile::tiles[i]->m_pMaterial->isLiquid())
-				{
-					sound = Tile::tiles[i]->m_pSound;
-				}
-
-				if (sound != nullptr)
-					m_pLevel->playSound(this, "step." + sound->m_name, sound->volume * 0.20f, sound->pitch);
-
-				Tile::tiles[i]->stepOn(m_pLevel, tp, this);
+				playStepSound(tp, tileId);
 			}
 		}
 
@@ -413,7 +428,7 @@ void Entity::lerpTo(const Vec3& pos)
 	setPos(pos);
 }
 
-void Entity::lerpTo(const Vec3& pos, const Vec2& rot, int p)
+void Entity::lerpTo(const Vec3& pos, const Vec2& rot, int steps)
 {
 	lerpTo(pos);
 	setRot(rot);
@@ -469,8 +484,16 @@ void Entity::tick()
 void Entity::baseTick()
 {
 	//@TODO: untangle the gotos
+	if (const Entity* riding = getRiding())
+	{
+		// if you were riding an entity and they no longer exist, stop
+		if ((!riding && m_ridingId > 0) || riding->m_bRemoved)
+		{
+			setRiding(nullptr);
+		}
+	}
 
-	field_90 = m_walkDist;
+	m_walkDistO = m_walkDist;
 	m_oPos = m_pos;
     m_tickCount++;
 	m_oRot = m_rot;
@@ -728,9 +751,9 @@ float Entity::distanceToSqr(const Vec3& pos) const
 	return m_pos.distanceToSqr(pos);
 }
 
-int Entity::interactPreventDefault()
+bool Entity::interactPreventDefault() const
 {
-	return 0;
+	return false;
 }
 
 bool Entity::interact(Player* player)
@@ -745,6 +768,9 @@ void Entity::playerTouch(Player* player)
 
 void Entity::push(Entity* bud)
 {
+	if (bud == getRider() || bud == getRiding())
+		return;
+
 	float diffX = bud->m_pos.x - m_pos.x;
 	float diffZ = bud->m_pos.z - m_pos.z;
 	float maxDiff = Mth::absMax(diffX, diffZ);
@@ -778,7 +804,7 @@ bool Entity::shouldRender(Vec3& camPos) const
 
 bool Entity::shouldRenderAtSqrDistance(float distSqr) const
 {
-	float maxDist = (field_30 * 64.0f) * (((m_hitbox.max.z - m_hitbox.min.z) + (m_hitbox.max.x - m_hitbox.min.x) + (m_hitbox.max.y - m_hitbox.min.y)) / 3.0f);
+	float maxDist = (m_viewScale * 64.0f) * (((m_hitbox.max.z - m_hitbox.min.z) + (m_hitbox.max.x - m_hitbox.min.x) + (m_hitbox.max.y - m_hitbox.min.y)) / 3.0f);
 
 	return maxDist * maxDist > distSqr;
 }
@@ -889,9 +915,9 @@ void Entity::outOfWorld()
 	remove();
 }
 
-void Entity::checkFallDamage(float fDeltaY, bool bHitGround)
+void Entity::checkFallDamage(float ya, bool onGround)
 {
-	if (bHitGround)
+	if (onGround)
 	{
 		if (m_distanceFallen > 0.0f)
 		{
@@ -899,13 +925,13 @@ void Entity::checkFallDamage(float fDeltaY, bool bHitGround)
 			m_distanceFallen = 0.0f;
 		}
 	}
-	else if (fDeltaY < 0.0f)
+	else if (ya < 0.0f)
 	{
-		m_distanceFallen -= fDeltaY;
+		m_distanceFallen -= ya;
 	}
 }
 
-void Entity::causeFallDamage(float f)
+void Entity::causeFallDamage(float ya)
 {
 	// stub
 }
@@ -947,6 +973,46 @@ AABB* Entity::getCollideAgainstBox(Entity* ent) const
 	return nullptr;
 }
 
+void Entity::rideTick()
+{
+	Entity* riding = getRiding();
+	if (!riding || riding->m_bRemoved)
+	{
+		setRiding(nullptr);
+		return;
+	}
+
+	// we don't move
+	m_vel = Vec3::ZERO;
+
+	tick();
+
+	riding->positionRider();
+	m_rideRot.x += riding->m_rot.x - riding->m_oRot.x;
+	m_rideRot.y += riding->m_rot.y - riding->m_oRot.y;
+	while (m_rideRot.y >= 180.0f)
+		m_rideRot.y -= 360.0f;
+	while (m_rideRot.y < -180.0f)
+		m_rideRot.y += 360.0f;
+	while (m_rideRot.x >= 180.0f)
+		m_rideRot.x -= 360.0f;
+	while (m_rideRot.x < -180.0f)
+		m_rideRot.x += 360.0f;
+	
+	float rotX = m_rideRot.x * 0.5f;
+	float rotY = m_rideRot.y * 0.5f;
+
+	constexpr float lookLimiter = 10.0f;
+	rotX = Mth::clamp(rotX, -lookLimiter, lookLimiter);
+	rotY = Mth::clamp(rotY, -lookLimiter, lookLimiter);
+
+	m_rideRot.x -= rotX;
+	m_rideRot.y -= rotY;
+
+	m_rot.x += rotX;
+	m_rot.y += rotY;
+}
+
 void Entity::handleInsidePortal()
 {
 }
@@ -954,6 +1020,99 @@ void Entity::handleInsidePortal()
 void Entity::handleEntityEvent(EventType::ID eventId)
 {
 	LOG_W("Unknown EntityEvent ID: %d, EntityType: %s", eventId, getDescriptor().getEntityType().getName().c_str());
+}
+
+void Entity::positionRider()
+{
+	Entity* rider = getRider();
+	if (!rider)
+		return;
+
+	rider->setPos(Vec3(m_pos.x, m_pos.y + getRideHeight() + rider->getRidingHeight(), m_pos.z));
+}
+
+void Entity::ride(Entity* newRiding)
+{
+	m_rideRot = Vec2::ZERO;
+	Entity* oldRiding = getRiding();
+
+	// Dismount current ride if nullptr is fed in
+	if (newRiding == nullptr)
+	{
+		if (oldRiding)
+		{
+			moveTo(oldRiding->m_pos);
+			setRot(oldRiding->m_rot);
+			oldRiding->setRider(nullptr);
+		}
+
+		// Let yourself know you aren't riding anything
+		setRiding(nullptr);
+
+		return;
+	}
+
+	// Dismount if the same entity is fed in
+	if (oldRiding && oldRiding == newRiding)
+	{
+		oldRiding->setRider(nullptr);
+
+		setRiding(nullptr);
+
+		moveTo(oldRiding->m_pos);
+		setRot(oldRiding->m_rot);
+		return;
+	}
+
+	// if (this.riding != null) this.riding.rider = null;
+	if (oldRiding)
+	{
+		oldRiding->setRider(nullptr);
+	}
+
+	// if (newRiding.rider != null) newRiding.rider.riding = null;
+	// i hate this name but it's literally what it is
+	if (Entity* newRidesOldRider = newRiding->getRider())
+	{
+		setRiding(nullptr);
+		newRidesOldRider->setRider(nullptr);
+	}
+
+	setRiding(newRiding);
+	newRiding->setRider(this);
+}
+
+Entity* Entity::getRiding() const
+{
+	if (m_ridingId <= 0)
+		return nullptr;
+
+	if (Entity* riding = m_pLevel->getEntity(m_ridingId))
+		return riding;
+
+	return nullptr;
+}
+
+Entity* Entity::getRider() const
+{
+    if (m_riderId <= 0)
+		return nullptr;
+
+	if (Entity* rider = m_pLevel->getEntity(m_riderId))
+		return rider;
+
+	return nullptr;
+}
+
+void Entity::setRider(Entity* rider)
+{
+	m_riderId = (rider) ? rider->m_EntityID : 0;
+}
+
+void Entity::setRiding(Entity* riding)
+{
+	m_ridingId = (riding) ? riding->m_EntityID : 0;
+	setSharedFlag(FLAG_RIDING, riding);
 }
 
 /*void Entity::thunderHit(LightningBolt* bolt)
@@ -995,7 +1154,7 @@ void Entity::load(const CompoundTag& tag)
 	m_airSupply = tag.getInt16("Air");
 	m_bOnGround = tag.getBoolean("OnGround");
 	setPos(m_pos);
-	setRot(m_rot);
+	setRot(m_rot, true);
 	readAdditionalSaveData(tag);
 }
 

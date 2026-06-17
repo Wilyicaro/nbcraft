@@ -30,33 +30,31 @@ void Mob::_init()
 	m_attackTime = 0;
 	m_oTilt = 0.0f;
 	m_tilt = 0.0f;
-	field_120 = 0;
-	field_124 = 0;
-	field_128 = 0.0f;
+	m_lookTime = 0;
+	m_modelNum = -1;
+	m_walkAnimSpeedO = 0.0f;
 	m_walkAnimSpeed = 0.0f;
-	field_130 = 0.0f;
+	m_walkAnimPos = 0.0f;
 	m_noActionTime = 0;
 	m_moveVelocity = Vec2::ZERO;
 	m_yRotA = 0.0f;
 	m_bJumping = false;
-	field_B10 = 0;
+	m_defaultLookAngle = 0;
 	m_runSpeed = 0.7f;
 	m_flyingFriction = 0.02f;
-	field_B48 = 0;
-	field_B4C = 0.0f;
-	field_B50 = 0.0f;
-	field_B54 = 0.0f;
-	field_B58 = 0.0f;
+	m_deathScore = 0;
+	m_oRun = 0.0f;
+	m_run = 0.0f;
+	m_animStep = 0.0f;
+	m_animStepO = 0.0f;
 	m_rotOffs = 0.0f;
-	field_B60 = 1.0f;
-	field_B64 = 0;
-	field_B68 = 1;
-	field_B69 = 0;
+	m_bobStrength = 1.0f;
+	m_bDead = false;
 	m_lSteps = 0;
 	m_lPos = Vec3::ZERO;
 	m_lRot = Vec2::ZERO;
 	m_lastHurt = 0;
-	m_pEntLookedAt = nullptr;
+	m_entLookedAtId = 0;
 	m_bSwinging = false;
 	m_swingTime = 0;
 	m_ambientSoundTime = 0;
@@ -71,9 +69,9 @@ Mob::Mob(Level* pLevel) : Entity(pLevel)
 
     m_bBlocksBuilding = true;
 
-	field_E4 = (Mth::random() + 1.0f) * 0.01f;
+	m_rotA = (Mth::random() + 1.0f) * 0.01f;
 	setPos(m_pos);
-	field_E0 = Mth::random() * 12398.0f;
+	m_timeOffs = Mth::random() * 12398.0f;
 	m_rot.x = float(Mth::random() * M_PI);
 	m_footSize = 0.5f;
 }
@@ -135,7 +133,7 @@ void Mob::tick()
 	yBodyRot = m_yBodyRot;
 	x1 = yBodyRot;
 
-	field_B4C = field_B50;
+	m_oRun = m_run;
 
 	if (dist > 0.05f)
 	{
@@ -160,7 +158,7 @@ void Mob::tick()
 	if (!m_bOnGround)
 		x3 = 0.0f;
 
-	field_B50 += (x3 - field_B50) * 0.3f;
+	m_run += (x3 - m_run) * 0.3f;
 	
 
 	// Similar to rotlerp
@@ -233,7 +231,7 @@ LABEL_31:
 	while (m_rot.y - m_oRot.y >= 180.0f)
 		m_oRot.y += 360.0f;
 
-	field_B54 += x2;
+	m_animStep += x2;
 }
 
 void Mob::baseTick()
@@ -249,7 +247,7 @@ void Mob::baseTick()
     if (isAlive() && isInWall())
         hurt(nullptr, 1);
 
-    // Java
+    // @PARITY-JAVA: From Java
     /*if (m_bFireImmune || m_pLevel->m_bIsClientSide)
     {
         m_fireTicks = 0;
@@ -314,7 +312,7 @@ void Mob::baseTick()
         }
     }
 
-    field_B58 = field_B54;
+    m_animStepO = m_animStep;
     m_yBodyRotO = m_yBodyRot;
     m_oRot = m_rot;
 
@@ -403,11 +401,16 @@ bool Mob::hurt(Entity *pAttacker, int damage)
                 zd = 0.01f * (Mth::random() - Mth::random());
             }
 
-            float ang = atan2f(zd, xd);
-            v020_field_104 = ang * (180.0f / float(M_PI)) - m_rot.x;
+            float ang = Mth::atan2(zd, xd);
+            m_hurtDir = ang * (180.0f / float(M_PI)) - m_rot.x;
 
             knockback(pAttacker, damage, xd, zd);
         }
+		else
+		{
+			// b1.2, might not be present in PE
+			m_hurtDir = (Mth::random() * 2.0f) * 180.0f;
+		}
     }
 
     if (m_health <= 0)
@@ -430,9 +433,8 @@ bool Mob::hurt(Entity *pAttacker, int damage)
 
 void Mob::animateHurt()
 {
-	m_hurtDuration = 10;
+	m_hurtTime = m_hurtDuration = 10;
 	m_hurtDir = 0;
-	m_hurtTime = 10;
 }
 
 void Mob::setSize(float rad, float height)
@@ -466,7 +468,7 @@ void Mob::causeFallDamage(float level)
 		{
 			const Tile::SoundType* pSound = Tile::tiles[tileId]->m_pSound;
 
-			m_pLevel->playSound(this, "step." + pSound->m_name, pSound->volume * 0.5f, pSound->pitch * 0.75f);
+			m_pLevel->playSound(this, "step." + pSound->name, pSound->volume * 0.5f, pSound->pitch * 0.75f);
 		}
 	}
 }
@@ -595,11 +597,11 @@ void Mob::travel(const Vec2& pos)
 
 	float x2, dragFactor;
 	float oldYPos = m_pos.y;
-	if (isSlowedByLiquids() && (isInWater() || isInLava()))
+	if (isSlowedByLiquids() && (wasInWater() || isInLava()))
 	{
 		moveRelative(Vec3(pos.x, 0.02f, pos.y));
 		move(m_vel);
-		const float x1 = (isInWater() ? 0.8f : 0.5f);
+		const float x1 = (wasInWater() ? 0.8f : 0.5f);
 		m_vel.y = m_vel.y * x1 - 0.02f;
 		m_vel.x *= x1;
 		m_vel.z *= x1;
@@ -686,10 +688,10 @@ void Mob::travel(const Vec2& pos)
 
 void Mob::die(Entity* pCulprit)
 {
-	if (pCulprit && field_B48 > 0)
-		pCulprit->awardKillScore(pCulprit, field_B48);
+	if (pCulprit && m_deathScore > 0)
+		pCulprit->awardKillScore(pCulprit, m_deathScore);
 
-	field_B69 = true;
+	m_bDead = true;
 
 	if (!m_pLevel->m_bIsClientSide)
 	{
@@ -710,7 +712,7 @@ bool Mob::canSee(Entity* pEnt) const
 
 void Mob::updateWalkAnim()
 {
-	field_128 = m_walkAnimSpeed;
+	m_walkAnimSpeedO = m_walkAnimSpeed;
 
 	float diffX = m_pos.x - m_oPos.x;
 	float diffZ = m_pos.z - m_oPos.z;
@@ -720,7 +722,7 @@ void Mob::updateWalkAnim()
 		spd = 1.0f;
 
 	m_walkAnimSpeed += (spd - m_walkAnimSpeed) * 0.4f;
-	field_130 += m_walkAnimSpeed;
+	m_walkAnimPos += m_walkAnimSpeed;
 }
 
 void Mob::aiStep()
@@ -735,7 +737,7 @@ void Mob::aiStep()
 		updateAi();
 	}
 
-	bool bIsInWater = isInWater(), bIsInLava = isInLava();
+	bool bIsInWater = wasInWater(), bIsInLava = isInLava();
 	if (m_bJumping)
 	{
 		if (bIsInWater || bIsInLava)
@@ -758,7 +760,7 @@ void Mob::aiStep()
 	{
 		Entity* pEnt = *it;
 		if (pEnt->isPushable())
- 			pEnt->push(this);
+			pEnt->push(this);
 	}
 }
 
@@ -784,6 +786,13 @@ void Mob::lookAt(Entity* pEnt, float a3, float a4)
 
 	setRot(Vec2(rotlerp(m_rot.x, x1 * 180.0f / float(M_PI) - 90.0f, a4),
 	              -rotlerp(m_rot.y, x2 * 180.0f / float(M_PI), a3)));
+}
+
+Entity* Mob::getLookingAt() const
+{
+	if (m_entLookedAtId == 0)
+		return nullptr;
+    return m_pLevel->getEntity(m_entLookedAtId);
 }
 
 bool Mob::canSpawn()
@@ -832,9 +841,9 @@ void Mob::updateAi()
 		Entity* nearestPlayer = m_pLevel->getNearestPlayer(*this, 8.0f);
 		if (nearestPlayer)
 		{
-			m_pEntLookedAt = nearestPlayer;
+			m_entLookedAtId = nearestPlayer->m_EntityID;
 
-			field_120 = m_random.nextInt(20) + 10;
+			m_lookTime = m_random.nextInt(20) + 10;
 		}
 		else
 		{
@@ -843,28 +852,30 @@ void Mob::updateAi()
 	}
 
 	// @TODO: we get a crash here when a Player leaves
-	if (m_pEntLookedAt)
+	if (m_entLookedAtId > 0)
 	{
-		lookAt(m_pEntLookedAt, 10.0f, getMaxHeadXRot());
+		Entity* pEnt = m_pLevel->getEntity(m_entLookedAtId);
+		lookAt(pEnt, 10.0f, getMaxHeadXRot());
 
 		// gaze timer
-		field_120--;
+		m_lookTime--;
 
 		// if the entity was removed, or we're too far away, or our gaze timer is up
-		if (field_120 < 0 || m_pEntLookedAt->m_bRemoved || m_pEntLookedAt->distanceToSqr(this) > 64.0f)
+		if (m_lookTime < 0 || pEnt->m_bRemoved || pEnt->distanceToSqr(this) > 64.0f)
 			// stop staring
-			m_pEntLookedAt = nullptr;
+			m_entLookedAtId = 0;
 	}
 	else
 	{
 		if (m_random.nextFloat() < 0.05f)
 			m_yRotA = (m_random.nextFloat() - 0.5f) * 20.0f;
 
+		// oh my god, our X and Y rot are mixed around
 		m_rot.x += m_yRotA;
-		m_rot.y = field_B10;
+		m_rot.y = m_defaultLookAngle;
 	}
 
-	if (isInWater() || isInLava())
+	if (wasInWater() || isInLava())
 	{
 		m_bJumping = m_random.nextFloat() < 0.8f;
 	}

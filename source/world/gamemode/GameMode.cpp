@@ -13,7 +13,7 @@
 GameMode::GameMode(Minecraft* pMinecraft, Level& level) :
 	_level(level),
 	m_pMinecraft(pMinecraft),
-	field_8(0)
+	m_bInstaBuild(0)
 {
 }
 
@@ -46,7 +46,7 @@ bool GameMode::destroyBlock(Player* player, const TilePos& pos, Facing::Name fac
 		return false;
 
 
-	_level.playSound(pos + 0.5f, "step." + oldTile->m_pSound->m_name,
+	_level.playSound(pos + 0.5f, "step." + oldTile->m_pSound->name,
 		(oldTile->m_pSound->volume * 0.5f) + 0.5f, oldTile->m_pSound->pitch * 0.8f);
 
 	oldTile->destroy(&_level, pos, tileData);
@@ -100,7 +100,7 @@ float GameMode::getEntityReachDistance() const
 
 LocalPlayer* GameMode::createPlayer(Level* pLevel)
 {
-	return new LocalPlayer(m_pMinecraft, pLevel, m_pMinecraft->m_pUser, pLevel->getDefaultGameType(), _level.m_pDimension->field_50);
+	return new LocalPlayer(m_pMinecraft, pLevel, m_pMinecraft->m_pUser, pLevel->getDefaultGameType(), _level.m_pDimension->m_id);
 }
 
 void GameMode::initPlayer(Player* pPlayer)
@@ -126,9 +126,9 @@ void GameMode::attack(Player* player, Entity* entity)
 	player->attack(entity);
 }
 
-ItemStack GameMode::handleInventoryMouseClick(int containerId, int slotNum, MouseButtonType button, bool quick, Player* player)
+ItemStack GameMode::handleInventoryMouseClick(int containerId, Container::SlotID slotId, MouseButtonType button, bool quick, Player* player)
 {
-	return player->m_pContainerMenu->clicked(slotNum, button, quick, player);
+	return player->m_pContainerMenu->clicked(slotId, button, quick, player);
 }
 
 void GameMode::handleCloseInventory(int a, Player* player)

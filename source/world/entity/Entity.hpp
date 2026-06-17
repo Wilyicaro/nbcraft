@@ -20,10 +20,6 @@
 #include "SynchedEntityData.hpp"
 #include "EntityTypeDescriptor.hpp"
 
-#define C_ENTITY_FLAG_ONFIRE (0)
-#define C_ENTITY_FLAG_SNEAKING (1)
-#define C_ENTITY_FLAG_RIDING (2)
-
 class Level;
 class Player;
 class ItemStack;
@@ -90,6 +86,8 @@ public:
 		RENDER_TNT,
 		RENDER_HUMANOID,
 		RENDER_ITEM,
+		RENDER_THROWN_EGG,
+		RENDER_SNOWBALL,
 		RENDER_CAMERA,
 		RENDER_CHICKEN,
 		RENDER_COW,
@@ -106,6 +104,15 @@ public:
 		// custom
 		RENDER_FALLING_TILE = 50
 	};
+	enum Flags
+	{
+		FLAG_ON_FIRE,
+		FLAG_SNEAKING,
+		FLAG_RIDING,
+		FLAG_SPRINTING,
+		FLAG_USING_ITEM,
+		FLAGS_COUNT
+	};
 
 private:
 	void _init();
@@ -114,9 +121,10 @@ public:
 	Entity(Level*);
 	virtual ~Entity();
 
-protected:
+public:
 	virtual bool getSharedFlag(SharedFlag flag) const;
 	virtual void setSharedFlag(SharedFlag flag, bool value);
+	virtual void playStepSound(const TilePos& pos, TileID tileId);
 
 public:
 	virtual void reset();
@@ -131,7 +139,7 @@ public:
 	virtual void absMoveTo(const Vec3& pos, const Vec2& rot);
 	virtual void moveRelative(const Vec3& pos);
 	virtual void lerpTo(const Vec3& pos);
-	virtual void lerpTo(const Vec3& pos, const Vec2& rot, int p = 3);
+	virtual void lerpTo(const Vec3& pos, const Vec2& rot, int steps = 3);
 	virtual void lerpMotion(const Vec3& pos);
 	virtual void turn(const Vec2& rot);
 	virtual void interpolateTurn(const Vec2& rot);
@@ -142,6 +150,7 @@ public:
 	virtual bool isFree(const Vec3& off, float expand) const;
 	virtual bool isInWall() const;
 	virtual bool isInWater();
+	bool wasInWater() const { return m_bWasInWater; }
 	virtual bool isInLava() const;
 	virtual bool isUnderLiquid(Material*) const;
 	virtual float getHeadHeight() const { return 0.0f; }
@@ -157,7 +166,7 @@ public:
 	virtual float distanceToSqr(const Vec3& pos) const;
 	virtual float distanceTo(const Vec3& pos) const;
 	virtual float distanceToSqr(const Entity*) const;
-	virtual int interactPreventDefault();
+	virtual bool interactPreventDefault() const;
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Woverloaded-virtual"
 	virtual bool interact(Player*);
@@ -168,10 +177,10 @@ public:
 	virtual bool isPickable() const { return false; }
 	virtual bool isPushable() const { return false; }
 	virtual bool isShootable() const { return false; }
-	virtual bool isOnFire() const { return m_fireTicks > 0 || getSharedFlag(C_ENTITY_FLAG_ONFIRE); }
-	virtual bool isRiding() const { return /*m_pRiding != nullptr ||*/ getSharedFlag(C_ENTITY_FLAG_RIDING); }
-	virtual bool isSneaking() const { return getSharedFlag(C_ENTITY_FLAG_SNEAKING); }
-	virtual void setSneaking(bool value) { setSharedFlag(C_ENTITY_FLAG_SNEAKING, value); }
+	virtual bool isOnFire() const { return m_fireTicks > 0 || getSharedFlag(FLAG_ON_FIRE); }
+	virtual bool isRiding() const { return getRiding() || getSharedFlag(FLAG_RIDING); }
+	virtual bool isSneaking() const { return getSharedFlag(FLAG_SNEAKING); }
+	virtual void setSneaking(bool value) { setSharedFlag(FLAG_SNEAKING, value); }
 	virtual bool isAlive() const { return m_bRemoved; }
 	virtual bool isPlayer() const { return false; }
 	virtual bool isMob() const { return false; }
@@ -192,17 +201,26 @@ public:
 	virtual void setPos(EntityPos*);
 	virtual void resetPos(bool respawn = false);
 	virtual void outOfWorld();
-	virtual void checkFallDamage(float f, bool b);
-	virtual void causeFallDamage(float f);
+	virtual void checkFallDamage(float ya, bool onGround);
+	virtual void causeFallDamage(float ya);
 	virtual void markHurt();
 	virtual void burn(int);
 	virtual void lavaHurt();
 	virtual RenderType queryEntityRenderer() const;
 	virtual const AABB* getCollideBox() const;
 	virtual AABB* getCollideAgainstBox(Entity* ent) const;
+	virtual void rideTick();
 	virtual void handleInsidePortal();
 	virtual void handleEntityEvent(EventType::ID eventId);
 	//virtual void thunderHit(LightningBolt*);
+	virtual void positionRider();
+	virtual void ride(Entity*);
+	virtual float getRideHeight() const { return m_bbHeight * 0.75f; }
+	virtual float getRidingHeight() const { return m_heightOffset; }
+	Entity* getRiding() const;
+	Entity* getRider() const;
+	void setRiding(Entity* ent);
+	void setRider(Entity* ent);
 	void load(const CompoundTag& tag);
 	bool save(CompoundTag& tag) const;
 	void saveWithoutId(CompoundTag& tag) const;
@@ -227,6 +245,10 @@ public:
 			(m_pos.z - pos.z) * (m_pos.z - pos.z);
 	}
 
+private:
+	Entity::ID m_ridingId;
+	Entity::ID m_riderId;
+
 protected:
 	SynchedEntityData m_entityData;
 	bool m_bMakeStepSound;
@@ -237,19 +259,18 @@ public:
 	bool m_bInAChunk;
 	ChunkPos m_chunkPos;
 	int m_chunkPosY;
-	int field_20; // unused Vec3?
-	int field_24;
-	int field_28;
 	Entity::ID m_EntityID;
-	float field_30;
+	float m_viewScale;
 	//TileSource* m_pTileSource;
 	DimensionId m_dimensionId;
+	bool m_bRiding;
 	bool m_bBlocksBuilding;
 	Level* m_pLevel;
 	Vec3 m_oPos; // "o" in Java or "xo" "yo" "zo"
 	Vec3 m_vel;
 	Vec2 m_rot;
 	Vec2 m_oRot; // "RotO" in Java or "xRotO" "yRotO"
+	Vec2 m_rideRot;
 	Color m_tintColor;
 	AABB m_hitbox;
 	bool m_bOnGround;
@@ -265,7 +286,7 @@ public:
 	float m_heightOffset;
 	float m_bbWidth;
 	float m_bbHeight;
-	float field_90;
+	float m_walkDistO;
 	float m_walkDist;
 	Vec3 m_posPrev;
 	float m_ySlideOffset;

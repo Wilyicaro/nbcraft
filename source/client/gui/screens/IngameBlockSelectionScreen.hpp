@@ -44,7 +44,7 @@ public:
 	bool isPauseScreen() override;
 
 private:
-	SlotID m_selectedSlot;
+	Container::SlotID m_selectedSlot;
 	bool m_bReleased;
 	bool m_bClickedOnSlot;
 	Button m_btnCraft;

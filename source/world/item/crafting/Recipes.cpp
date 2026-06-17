@@ -3,6 +3,7 @@
 //#include "world/tile/RecordPlayerTile.hpp"
 //#include "world/item/MapItem.hpp"
 #include "common/Logger.hpp"
+#include "compat/GameVersion.h"
 
 Recipes* Recipes::instance = nullptr;
 
@@ -120,14 +121,14 @@ Recipes::Recipes()
     addOre(ItemStack(Item::dye_powder, 1, 4), Tile::lapisBlock);
 
     // StructureRecipes
-    //add(ShapedRecipeBuilder("###",
-    //                        "# #",
-    //                        "###", ItemStack(Tile::chest))
-    //    .add('#', Tile::wood));
-    //add(ShapedRecipeBuilder("###",
-    //                        "# #",
-    //                        "###", ItemStack(Tile::furnace))
-    //    .add('#', Tile::stoneBrick));
+    add(ShapedRecipeBuilder("###",
+                            "# #",
+                            "###", ItemStack(Tile::chest))
+        .add('#', Tile::wood));
+    add(ShapedRecipeBuilder("###",
+                            "# #",
+                            "###", ItemStack(Tile::furnace))
+        .add('#', Tile::stoneBrick));
 
     add(ShapedRecipeBuilder("##",
                             "##", ItemStack(Tile::craftingTable))
@@ -163,17 +164,24 @@ Recipes::Recipes()
                             "###", ItemStack(Tile::fence, 2))
         .add('#', Item::stick));
 
+#if MC_VERSION >= MC_VER_BETA(1, 8, 0)
+    add(ShapedRecipeBuilder("#W#",
+        "#W#", ItemStack(Tile::fenceGate, 1))
+        .add('#', Item::stick)
+        .add('W', Tile::wood));
+#endif
+
     //add(ShapedRecipeBuilder("###",
     //                        "#X#",
     //                        "###", ItemStack(Tile::recordPlayer, 1))
     //    .add('#', Tile::wood)
     //    .add('X', Item::emerald));
 
-    //add(ShapedRecipeBuilder("###",
-    //                        "#X#",
-    //                        "###", ItemStack(Tile::musicBlock, 1))
-    //    .add('#', Tile::wood)
-    //    .add('X', Item::redStone));
+    add(ShapedRecipeBuilder("###",
+                            "#X#",
+                            "###", ItemStack(Tile::musicBlock, 1))
+        .add('#', Tile::wood)
+        .add('X', Item::redStone));
 
     add(ShapedRecipeBuilder("###",
                             "XXX",
@@ -221,9 +229,9 @@ Recipes::Recipes()
     add(ShapedRecipeBuilder("###", ItemStack(Tile::stoneSlabHalf, 3, 3))
         .add('#', Tile::stoneBrick));
 
-    //add(ShapedRecipeBuilder("###",
-    //                        "###", ItemStack(Tile::trapDoor, 2))
-    //    .add('#', Tile::wood));
+    add(ShapedRecipeBuilder("###",
+                            "###", ItemStack(Tile::trapDoor, 2))
+        .add('#', Tile::wood));
 
     add(ShapedRecipeBuilder("# #",
                             "###",
@@ -316,9 +324,11 @@ Recipes::Recipes()
         .add('A', Item::ironIngot)
         .add('B', Item::flint));
 
+#if MC_VERSION >= MC_VER_BETA(1, 7, 0)
     add(ShapedRecipeBuilder("A ",
                             " A", ItemStack(Item::shears, 1))
         .add('A', Item::ironIngot));
+#endif
 
     add(ShapedRecipeBuilder("###", ItemStack(Item::bread, 1))
         .add('#', Item::wheat));
@@ -406,6 +416,7 @@ Recipes::Recipes()
         .add('#', Tile::cloth)
         .add('X', Tile::wood));
 
+#if MC_VERSION >= MC_VER_BETA(1, 7, 0)
     //add(ShapedRecipeBuilder("###",
     //                        "XIX",
     //                        "XRX", ItemStack(Tile::piston))
@@ -418,6 +429,7 @@ Recipes::Recipes()
     //                        "#", ItemStack(Tile::stickyPiston))
     //    .add('X', Item::slimeBall)
     //    .add('#', Tile::piston));
+#endif
 
     // ClothDyeRecipes
     for (int i = 0; i < 16; ++i)

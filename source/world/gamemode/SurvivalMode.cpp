@@ -42,6 +42,14 @@ bool SurvivalMode::startDestroyBlock(Player* player, const TilePos& pos, Facing:
 	if (tile <= 0)
 		return false;
 
+	// @PARITY: This is in MultiPlayerGameMode on Java, but we aren't equipped to move to that at the moment. Also, is not sent on PE.
+#if NETWORK_PROTOCOL_VERSION >= 6
+	if (m_pMinecraft->isOnlineClient())
+	{
+		m_pMinecraft->m_pRakNetInstance->send(new PlayerActionPacket(player->m_EntityID, PlayerActionPacket::START_DESTROY_BLOCK, pos, face));
+	}
+#endif
+
 	if (m_destroyProgress == 0.0f)
 	{
 		Tile::tiles[tile]->attack(&_level, pos, player);
@@ -118,7 +126,7 @@ bool SurvivalMode::continueDestroyBlock(Player* player, const TilePos& pos, Faci
 
 	if ((m_destroyTicks & 3) == 1)
 	{
-		_level.playSound(pos + 0.5f, "step." + pTile->m_pSound->m_name,
+		_level.playSound(pos + 0.5f, "step." + pTile->m_pSound->name,
 			0.125f * (1.0f + pTile->m_pSound->volume), 0.5f * pTile->m_pSound->pitch);
 	}
 
@@ -128,6 +136,14 @@ bool SurvivalMode::continueDestroyBlock(Player* player, const TilePos& pos, Faci
 		m_destroyCooldown = 5;
 		m_destroyProgress     = 0.0f;
 		m_lastDestroyProgress = 0.0f;
+
+		// @PARITY: This is in MultiPlayerGameMode on Java, but we aren't equipped to move to that at the moment. Also, is not sent on PE.
+#if NETWORK_PROTOCOL_VERSION >= 6
+		if (m_pMinecraft->isOnlineClient())
+		{
+			m_pMinecraft->m_pRakNetInstance->send(new PlayerActionPacket(player->m_EntityID, PlayerActionPacket::STOP_DESTROY_BLOCK, pos, face));
+		}
+#endif
 		return destroyBlock(player, m_destroyingPos, face);
 	}
 

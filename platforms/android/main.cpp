@@ -237,7 +237,7 @@ static std::string getExternalStorageDir(struct engine* engine)
     // This returns a directory path that looks something like the following, which is still
     // exposed to the user, therefore we get the benefits of having it exposed, aside from the
     // fact that removing the app will delete all your worlds.
-    // /.../Android/data/com.minecraftcpp/files
+    // /.../Android/data/org.nbcraft/files
 #ifndef USE_EXTERNAL_STORAGE
 
     return std::string(engine->androidApp->activity->externalDataPath);
@@ -399,7 +399,6 @@ static void engine_handle_cmd(struct android_app* app, int32_t cmd) {
 
 void android_main(struct android_app* state) {
     struct engine engine;
-
     memset(&engine, 0, sizeof(engine));
     state->userData = &engine;
     state->onAppCmd = engine_handle_cmd;

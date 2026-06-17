@@ -25,7 +25,7 @@ protected:
 public:
 	// overrides
 	void reset() override;
-	void lerpTo(const Vec3& pos, const Vec2& rot, int steps) override;
+	void lerpTo(const Vec3& pos, const Vec2& rot, int steps = 3) override;
 	void tick() override;
 	void baseTick() override;
 	float getHeadHeight() const override { return 0.85f * m_bbHeight; }
@@ -61,9 +61,9 @@ public:
 	virtual void updateWalkAnim();
 	virtual void aiStep();
 	virtual void lookAt(Entity* pEnt, float, float);
-	virtual bool isLookingAtAnEntity() { return m_pEntLookedAt != nullptr; }
+	virtual bool isLookingAtAnEntity() { return m_entLookedAtId > 0; }
 	virtual bool isSlowedByLiquids() const { return true; }
-	virtual Entity* getLookingAt() const { return m_pEntLookedAt; }
+	virtual Entity* getLookingAt() const;
 	virtual void beforeRemove() {}
 	virtual bool canSpawn();
 	virtual float getAttackAnim(float f) const;
@@ -99,8 +99,8 @@ private:
 
 public:
 	int m_invulnerableDuration;
-	float field_E0;
-	float field_E4;
+	float m_timeOffs;
+	float m_rotA;
 	float m_yBodyRot;
 	float m_yBodyRotO;
 	float m_oAttackAnim;
@@ -114,38 +114,34 @@ public:
 	int m_attackTime;
 	float m_oTilt;
 	float m_tilt;
-	int field_120;
-	int field_124;
-	float field_128;
+	int m_lookTime;
+	int m_modelNum;
+	float m_walkAnimSpeedO;
 	float m_walkAnimSpeed;
-	float field_130;
+	float m_walkAnimPos;
 	Random m_random;
 	int m_noActionTime;
 	Vec2 m_moveVelocity;
 	float m_yRotA;
 	bool m_bJumping;
-	float field_B10;
+	float m_defaultLookAngle;
 	float m_runSpeed;
 	float m_flyingFriction;
 	std::string m_texture;
 	std::string m_class;
-	int field_B48;
-	float field_B4C;
-	float field_B50;
-	float field_B54;
-	float field_B58;
+	int m_deathScore;
+	float m_oRun;
+	float m_run;
+	float m_animStep;
+	float m_animStepO;
 	float m_rotOffs;
-	float field_B60;
-	int field_B64;
-	char field_B68;
-	char field_B69;
+	float m_bobStrength;
+	bool m_bDead;
 	int m_lSteps;
 	Vec3 m_lPos;
 	Vec2 m_lRot;
 	int m_lastHurt;
-	Entity* m_pEntLookedAt;
-
-	float v020_field_104;
+	Entity::ID m_entLookedAtId;
 
 	bool m_bSwinging;
 	int m_swingTime;

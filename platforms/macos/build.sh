@@ -2,13 +2,14 @@
 # shellcheck disable=2086
 set -e
 
+# cd to the directory this script is in
 [ "${0%/*}" = "$0" ] && scriptroot="." || scriptroot="${0%/*}"
 cd "$scriptroot"
 
 # powerpc is handled further down
 targets='i386-apple-macos10.4 x86_64-apple-macos10.7 arm64-apple-macos11.0'
 # Must be kept in sync with the cmake executable name
-bin='reminecraftpe'
+bin='nbcraft'
 
 platformdir=$PWD
 
@@ -52,7 +53,7 @@ if ! [ -d "$x86_64_sdk" ] || ! [ -d "$arm64_sdk" ] || ! [ -d "$old_sdk" ] || [ "
     mv MacOSX10.5.sdk "$old_sdk"
     # patch the sdk to fix a bug
     cd "$old_sdk"
-    patch -p1 < "$platformdir/leopard-sdk-fix.patch"
+    patch -fNp1 < "$platformdir/leopard-sdk-fix.patch"
     )
     wait
     rm ./*.tar.bz2 ./*.tar.xz
@@ -82,7 +83,7 @@ for var in ar ranlib; do
     fi
 done
 
-for dep in "${CLANG:-clang}" make cmake; do
+for dep in "${CLANG:-clang}" make cmake cmp; do
     if ! command -v "$dep" >/dev/null; then
         printf '%s not found!\n' "$dep"
         exit 1
@@ -97,9 +98,18 @@ if [ -z "$LLVM_CONFIG" ]; then
     fi
 fi
 
+# If the repo directory is moved the ppc toolchain breaks, and the regular
+# toolchain breaks under non-darwin platforms.
+printf '%s' "$workdir" > workdir
+if ! cmp -s workdir lastworkdir; then
+    [ "$(uname -s)" != "Darwin" ] && rm -rf toolchain
+    rm -rf toolchain-ppc
+fi
+mv workdir lastworkdir
+
 # Increase this if we ever make a change to the toolchain, for example
 # using a newer cctools-port version, and we need to invalidate the cache.
-toolchainver=2
+toolchainver=3
 if [ "$(cat toolchain/toolchainver 2>/dev/null)" != "$toolchainver" ]; then
     rm -rf toolchain
     outdated_toolchain=1
@@ -123,9 +133,9 @@ else
 fi
 # ensure we use ccache for the toolchain build
 ccache="$(command -v ccache || true)"
-printf '#!/bin/sh\nexec %s clang "$@"\n' "$ccache" > toolchain/bin/remcpe-clang
-printf '#!/bin/sh\nexec %s clang++ "$@"\n' "$ccache" > toolchain/bin/remcpe-clang++
-chmod +x toolchain/bin/remcpe-clang toolchain/bin/remcpe-clang++
+printf '#!/bin/sh\nexec %s clang "$@"\n' "$ccache" > toolchain/bin/nbc-clang
+printf '#!/bin/sh\nexec %s clang++ "$@"\n' "$ccache" > toolchain/bin/nbc-clang++
+chmod +x toolchain/bin/nbc-clang toolchain/bin/nbc-clang++
 
 if [ -n "$outdated_toolchain" ]; then
     # this step is needed even on macOS since newer versions of Xcode will straight up not let you link for old macOS versions anymore
@@ -136,16 +146,18 @@ if [ -n "$outdated_toolchain" ]; then
     wget -O- "https://github.com/tpoechtrager/apple-libtapi/archive/$tapi_commit.tar.gz" | tar -xz
 
     cd "apple-libtapi-$tapi_commit"
-    INSTALLPREFIX="$workdir/toolchain" CC=remcpe-clang CXX=remcpe-clang++ ./build.sh && ./install.sh
+    INSTALLPREFIX="$workdir/toolchain" CC=nbc-clang CXX=nbc-clang++ ./build.sh && ./install.sh
     cd ..
-    rm -rf "apple-libtapi-$tapi_commit"
+    rm -rf "apple-libtapi-$tapi_commit" &
     if [ "$(uname -s)" = "Darwin" ]; then
         strip -x toolchain/lib/libtapi.dylib
+        install_name_tool -id '@executable_path/../lib/libtapi.dylib' \
+            toolchain/lib/libtapi.dylib
     else
         strip "$(realpath toolchain/lib/libtapi.so)"
     fi
 
-    cctools_commit=12e2486bc81c3b2be975d3e117a9d3ab6ec3970c
+    cctools_commit=fee8115127bb849d7481ea0015f181d3ebbd33cf
     rm -rf cctools-port-*
     wget -O- "https://github.com/Un1q32/cctools-port/archive/$cctools_commit.tar.gz" | tar -xz
 
@@ -155,8 +167,8 @@ if [ -n "$outdated_toolchain" ]; then
         --with-llvm-config="$LLVM_CONFIG" \
         --with-libtapi="$workdir/toolchain" \
         --target=i386-apple-darwin \
-        CC=remcpe-clang \
-        CXX=remcpe-clang++
+        CC=nbc-clang \
+        CXX=nbc-clang++
     make -C ld64 -j"$ncpus"
     strip ld64/src/ld/ld
     mv ld64/src/ld/ld ../../toolchain/bin/ld64.ld64
@@ -172,7 +184,7 @@ if [ -n "$outdated_toolchain" ]; then
     strip ar/ar
     mv ar/ar ../../toolchain/bin/cctools-ar
     cd ../..
-    rm -rf "cctools-port-$cctools_commit"
+    rm -rf "cctools-port-$cctools_commit" &
 
     if [ "$(uname -s)" != "Darwin" ] && ! command -v ldid >/dev/null; then
         printf '\nBuilding ldid...\n\n'
@@ -182,14 +194,15 @@ if [ -n "$outdated_toolchain" ]; then
         wget -O- "https://github.com/ProcursusTeam/ldid/archive/$ldid_commit.tar.gz" | tar -xz
 
         cd "ldid-$ldid_commit"
-        make CXX=remcpe-clang++
+        make CXX=nbc-clang++
         strip ldid
         mv ldid ../toolchain/bin
         cd ..
-        rm -rf "ldid-$ldid_commit"
+        rm -rf "ldid-$ldid_commit" &
     fi
     rm -rf toolchain/include
     printf '%s' "$toolchainver" > toolchain/toolchainver
+    wait
 fi
 
 # The PPC toolchain is separate from the regular toolchain because
@@ -198,7 +211,7 @@ fi
 
 # Increase this if we ever make a change to the toolchain, for example
 # using a newer GCC version, and we need to invalidate the cache.
-ppctoolchainver=2
+ppctoolchainver=3
 ppc_triple='powerpc-apple-darwin8'
 targets="$targets $ppc_triple"
 if [ "$(cat toolchain-ppc/toolchainver 2>/dev/null)" != "$ppctoolchainver" ]; then
@@ -220,8 +233,8 @@ if [ "$(cat toolchain-ppc/toolchainver 2>/dev/null)" != "$ppctoolchainver" ]; th
         --target=ppc \
         --enable-silent-rules \
         --with-llvm-config=false \
-        CC=remcpe-clang \
-        CXX=remcpe-clang++
+        CC=nbc-clang \
+        CXX=nbc-clang++
     make -C ld64 -j"$ncpus"
     strip ld64/src/ld/ld
     mv ld64/src/ld/ld ../../toolchain-ppc/bin/ppc-ld
@@ -234,9 +247,9 @@ if [ "$(cat toolchain-ppc/toolchainver 2>/dev/null)" != "$ppctoolchainver" ]; th
     strip as/ppc/ppc-as
     mv as/ppc/ppc-as ../../toolchain-ppc/bin/ppc-as
     cd ../..
-    rm -rf "cctools-port-$cctools_commit"
+    rm -rf "cctools-port-$cctools_commit" &
 
-    gcc_version='15.2.0'
+    gcc_version='16.1.0'
     rm -rf gcc-*
     wget -O- "https://ftp.gnu.org/gnu/gcc/gcc-$gcc_version/gcc-$gcc_version.tar.xz" | tar -xJ
 
@@ -266,18 +279,20 @@ if [ "$(cat toolchain-ppc/toolchainver 2>/dev/null)" != "$ppctoolchainver" ]; th
     make -j"$ncpus"
     make -j"$ncpus" install-strip
     cd ../..
-    rm -rf "gcc-$gcc_version"
+    rm -rf "gcc-$gcc_version" &
 
+    rm -rf toolchain-ppc/share
     printf '%s' "$ppctoolchainver" > toolchain-ppc/toolchainver
     outdated_ppc_toolchain=1
+    wait
 fi
 
 # checks if the linker we build successfully linked with LLVM and supports LTO,
 # and enables LTO in the cmake build if it does.
 if [ -z "$DEBUG" ]; then
     if printf 'int main(void) {return 0;}' |
-        REMCPE_TARGET=i386-apple-macos10.4 \
-        REMCPE_SDK="$old_sdk" \
+        NBC_TARGET=i386-apple-macos10.4 \
+        NBC_SDK="$old_sdk" \
         "$platformdir/macos-cc" -xc - -flto -o "$workdir/testout" >/dev/null 2>&1; then
         cflags='-flto'
     fi
@@ -303,7 +318,7 @@ mv buildsettings lastbuildsettings
 
 for target in $targets; do
     printf '\nBuilding for %s\n\n' "$target"
-    export REMCPE_TARGET="$target"
+    export NBC_TARGET="$target"
 
     mkdir -p "build-$target"
     cd "build-$target"
@@ -326,7 +341,7 @@ for target in $targets; do
                 target_ranlib="cctools-ranlib"
                 set -- -DCMAKE_EXE_LINKER_FLAGS='-framework IOKit -framework Carbon -framework AudioUnit -static-libgcc'
             fi
-            export REMCPE_SDK="$old_sdk"
+            export NBC_SDK="$old_sdk"
             platform='sdl1'
             sdl1ver=1
             if ! [ -f sdl/lib/libSDL.a ] || [ "$(cat sdl/sdl1ver 2>/dev/null)" != "$sdl1ver" ]; then
@@ -353,6 +368,7 @@ for target in $targets; do
                     --prefix="${PWD%/*}/sdl" \
                     --disable-shared \
                     --disable-video-x11 \
+                    --disable-altivec \
                     CC="$cc" \
                     CXX="$cxx" \
                     CFLAGS="$opt $target_cflags" \
@@ -372,11 +388,11 @@ for target in $targets; do
             target_cflags="$cflags"
             case $arch in
                 (arm64*)
-                    export REMCPE_SDK="$arm64_sdk"
+                    export NBC_SDK="$arm64_sdk"
                     set -- -DCMAKE_EXE_LINKER_FLAGS='-undefined dynamic_lookup'
                 ;;
                 (x86_64*)
-                    export REMCPE_SDK="$x86_64_sdk"
+                    export NBC_SDK="$x86_64_sdk"
                     set --
                 ;;
             esac
@@ -391,7 +407,7 @@ for target in $targets; do
     cmake "$platformdir/../.." \
         -DCMAKE_BUILD_TYPE="$build" \
         -DCMAKE_SYSTEM_NAME=Darwin \
-        -DREMCPE_PLATFORM="$platform" \
+        -DNBC_PLATFORM="$platform" \
         -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
         -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
         -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
@@ -399,50 +415,53 @@ for target in $targets; do
         -DCMAKE_RANLIB="$(command -v "$target_ranlib")" \
         -DCMAKE_C_COMPILER="$cc" \
         -DCMAKE_CXX_COMPILER="$cxx" \
-        -DCMAKE_FIND_ROOT_PATH="$REMCPE_SDK/usr;$PWD/sdl" \
-        -DCMAKE_SYSROOT="$REMCPE_SDK" \
+        -DCMAKE_FIND_ROOT_PATH="$NBC_SDK/usr;$PWD/sdl" \
+        -DCMAKE_SYSROOT="$NBC_SDK" \
         -DCMAKE_C_FLAGS="$target_cflags" \
         -DCMAKE_CXX_FLAGS="$target_cflags" \
         -DWERROR="${WERROR:-OFF}" \
         "$@"
-    make -j"$ncpus"
+    cmake --build . --parallel "$ncpus"
 
     cd ..
 done
 
-rm -rf ../ReMCPE
-mkdir -p ../ReMCPE/libexec
+rm -rf ../NBCraft.app
+mkdir -p ../NBCraft.app/Contents/MacOS/libexec ../NBCraft.app/Contents/Resources
+cp "$platformdir/Info.plist" ../NBCraft.app/Contents
 
-REMCPE_TARGET='arm64-apple-macos11.0' \
-    REMCPE_SDK="$arm64_sdk" \
+NBC_TARGET='arm64-apple-macos11.0' \
+    NBC_SDK="$arm64_sdk" \
     "$platformdir/macos-cc" \
     "$platformdir/arch.c" -Os -o arch-arm64
 
-REMCPE_TARGET='unknown-apple-macos10.4' \
-    REMCPE_SDK="$old_sdk" \
+NBC_TARGET='unknown-apple-macos10.4' \
+    NBC_SDK="$old_sdk" \
     "$platformdir/macos-cc" \
     -arch x86_64 -arch i386 \
     "$platformdir/arch.c" -Os -o arch-x86
 
-lipo -create arch-* -output ../ReMCPE/libexec/arch
+lipo -create arch-* -output ../NBCraft.app/Contents/MacOS/libexec/arch
 [ -z "$DEBUG" ] && [ -z "$NOSTRIP" ] &&
-    cctools-strip -no_code_signature_warning ../ReMCPE/libexec/arch
+    cctools-strip -no_code_signature_warning ../NBCraft.app/Contents/MacOS/libexec/arch
 
-cp -a "$platformdir/../../game/assets" ../ReMCPE
-cp "$platformdir/launchscript.sh" "../ReMCPE/$bin"
+cp -a "$platformdir/../../game/assets" ../NBCraft.app/Contents/MacOS
+cp "$platformdir/launchscript.sh" "../NBCraft.app/Contents/MacOS/$bin"
+mv ../NBCraft.app/Contents/MacOS/assets/app/icons/icon.icns ../NBCraft.app/Contents/Resources
+rm -rf ../NBCraft.app/Contents/MacOS/assets/app
 
 for target in $targets; do
     arch="${target%%-*}"
-    cp "build-$target/$bin" "../ReMCPE/libexec/$bin-$arch"
+    cp "build-$target/$bin" "../NBCraft.app/Contents/MacOS/libexec/$bin-$arch"
     case $arch in
         (powerpc*|ppc*) strip='ppc-strip' ;;
         (*) strip='cctools-strip -no_code_signature_warning' ;;
     esac
     [ -z "$DEBUG" ] && [ -z "$NOSTRIP" ] &&
-        $strip "../ReMCPE/libexec/$bin-${target%%-*}"
+        $strip "../NBCraft.app/Contents/MacOS/libexec/$bin-${target%%-*}"
 done
 if command -v ldid >/dev/null; then
-    ldid -S ../ReMCPE/libexec/arch "../ReMCPE/libexec/$bin-arm64"*
+    ldid -S ../NBCraft.app/Contents/MacOS/libexec/arch "../NBCraft.app/Contents/MacOS/libexec/$bin-arm64"*
 else
-    codesign -f -s - ../ReMCPE/libexec/arch "../ReMCPE/libexec/$bin-arm64"*
+    codesign -f -s - ../NBCraft.app/Contents/MacOS/libexec/arch "../NBCraft.app/Contents/MacOS/libexec/$bin-arm64"*
 fi

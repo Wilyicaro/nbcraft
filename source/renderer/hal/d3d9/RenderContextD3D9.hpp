@@ -4,7 +4,7 @@
 #include <map>
 
 #include "API_D3D9.hpp"
-#include "renderer/hal/base/RenderContextBase.hpp"
+#include "renderer/hal/d3d/RenderContextD3D.hpp"
 #include "renderer/hal/enums/PrimitiveMode.hpp"
 #include "thirdparty/com/ComInterface.hpp"
 #include "world/phys/Vec2.hpp"
@@ -23,7 +23,7 @@ namespace mce
     typedef ComInterface<IDirect3DDevice9> D3DDevice;
 
     class DepthStencilState;
-    class RenderContextD3D9 : public RenderContextBase
+    class RenderContextD3D9 : public RenderContextD3D
     {
     public:
         struct VertexDeclID
@@ -41,6 +41,7 @@ namespace mce
     private:
         IDirect3D9* m_pD3D;
         D3DDevice m_d3dDevice;
+        int m_shaderLangVersions[SHADER_TYPES_COUNT][2];
 
     public:
         D3DVIEWPORT9 m_viewport;
@@ -55,6 +56,7 @@ namespace mce
         RenderContextD3D9();
 
     public:
+        bool setGamma(Gamma gamma);
         void draw(PrimitiveMode primitiveMode, unsigned int startOffset, unsigned int count);
         void drawIndexed(PrimitiveMode primitiveMode, unsigned int count, uint8_t indexSize);
         void drawIndexed(PrimitiveMode primitiveMode, unsigned int count, unsigned int startOffset, uint8_t indexSize);
@@ -69,6 +71,8 @@ namespace mce
 		void suspend();
 		void resume();
         void swapBuffers();
+
+        void getShaderLangVersion(ShaderType shaderType, int& major, int& minor);
 
         bool supports8BitIndices() const;
 

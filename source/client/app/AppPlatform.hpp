@@ -35,7 +35,9 @@
 #define C_DEFAULT_SCREEN_HEIGHT (480)
 #endif
 
-#define C_HOME_PATH "/games/com.mojang/"
+#define C_GAME_NAME "NBCraft"
+#define C_HOME_PATH "/games/org.nbcraft/"
+#define C_STORAGE_DIR "nbcraft"
 #define C_MAX_LOCAL_PLAYERS 4
 
 typedef unsigned int LocalPlayerID;
@@ -107,6 +109,9 @@ public:
 	virtual void vibrate(int milliSeconds);
     virtual bool getRecenterMouseEveryTick();
 	virtual std::string getClipboardText();
+	// Graphics settings
+	virtual void setVSyncEnabled(bool enabled);
+	virtual bool isVSyncSwitchable() const;
 	
 	void _fireLowMemory();
 	void _fireAppSuspended();

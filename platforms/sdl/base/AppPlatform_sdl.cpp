@@ -1,3 +1,5 @@
+#define __STDC_LIMIT_MACROS
+#include <stdint.h>
 #include <sstream>
 #include <fstream>
 #include <sys/stat.h>
@@ -50,7 +52,7 @@ void AppPlatform_sdl::_init(std::string storageDir)
 	m_bIsTouchscreen = false;
 #endif
 	// Custom Touchscreen Mode
-	const char *mode = getenv("MCPE_INPUT_MODE");
+	const char *mode = getenv("NBC_INPUT_MODE");
 	if (mode)
 	{
 		if (strcmp(mode, "touch") == 0)
@@ -346,7 +348,7 @@ void AppPlatform_sdl::handleControllerButtonEvent(SDL_JoystickID controllerIndex
 
 void AppPlatform_sdl::handleControllerAxisEvent(SDL_JoystickID controllerIndex, uint8_t axis, int16_t value)
 {
-	float val = value / 32767.0f; // -32768 to 32767
+	float val = value / (float)INT16_MAX; // -32768 to 32767
 
 	switch (axis)
 	{

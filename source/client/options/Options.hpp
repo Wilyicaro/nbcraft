@@ -27,6 +27,7 @@ enum eButtonMappingIndex
 	BM_BACKWARD,
 	BM_RIGHT,
 	BM_JUMP,
+	BM_CRAFTING,
 	BM_INVENTORY,
 	BM_DROP,
 	BM_CHAT,
@@ -223,38 +224,6 @@ public:
 	float m_unit;
 };
 
-class SensitivityOption : public FloatOption
-{
-public:
-	SensitivityOption(const std::string& key, const std::string& name, float initial = 0.0f) : FloatOption(key, name, initial, 0.005f) {}
-
-	std::string getDisplayValue() const override;
-};
-
-class AOOption : public BoolOption
-{
-public:
-	AOOption(const std::string& key, const std::string& name, bool initial = true) : BoolOption(key, name, initial) {}
-
-	void apply() override;
-};
-
-class GraphicsOption : public BoolOption
-{
-public:
-	GraphicsOption(const std::string& key, const std::string& name, bool initial = true) : BoolOption(key, name, initial) {}
-
-	void apply() override;
-};
-
-class FancyGraphicsOption : public GraphicsOption
-{
-public:
-	FancyGraphicsOption(const std::string& key, const std::string& name, bool initial = true) : GraphicsOption(key, name, initial) {}
-
-	std::string getMessage() const override;
-};
-
 class IntOption : public OptionInstance<int>
 {
 public:
@@ -289,7 +258,9 @@ public:
 class MinMaxOption : public IntOption
 {
 public:
-	MinMaxOption(const std::string& key, const std::string& name, int initial, int min, int max) : IntOption(key, name, initial), m_min(min), m_max(max)
+	MinMaxOption(const std::string& key, const std::string& name, int initial, int min, int max) : IntOption(key, name, initial)
+		, m_min(min)
+		, m_max(max)
 	{
 	}
 
@@ -303,11 +274,11 @@ public:
 	int m_min, m_max;
 };
 
-
 class ValuesOption : public MinMaxOption
 {
 public:
-	ValuesOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : MinMaxOption(key, name, initial, 0, values.m_values.size()), m_values(values.m_values)
+	ValuesOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : MinMaxOption(key, name, initial, 0, values.m_values.size())
+		, m_values(values.m_values)
 	{
 	}
 
@@ -318,22 +289,75 @@ public:
 	std::vector<std::string> m_values;
 };
 
+class SensitivityOption : public FloatOption
+{
+public:
+	SensitivityOption(const std::string& key, const std::string& name, float initial = 0.0f) : FloatOption(key, name, initial, 0.005f) {}
+
+	std::string getDisplayValue() const override;
+};
+
+class ControllerOption : public BoolOption
+{
+public:
+	ControllerOption(const std::string& key, const std::string& name, bool initial = true) : BoolOption(key, name, initial) {}
+
+	void apply() override;
+};
+
+class AOOption : public BoolOption
+{
+public:
+	AOOption(const std::string& key, const std::string& name, bool initial = true) : BoolOption(key, name, initial) {}
+
+	void apply() override;
+};
+
+class GraphicsOption : public BoolOption
+{
+public:
+	GraphicsOption(const std::string& key, const std::string& name, bool initial = true) : BoolOption(key, name, initial) {}
+
+	void apply() override;
+};
+
+class FancyGraphicsOption : public GraphicsOption
+{
+public:
+	FancyGraphicsOption(const std::string& key, const std::string& name, bool initial = true) : GraphicsOption(key, name, initial) {}
+
+	std::string getMessage() const override;
+};
+
+class VsyncOption : public BoolOption
+{
+public:
+	VsyncOption(const std::string& key, const std::string& name, bool initial = true) : BoolOption(key, name, initial) {}
+
+	void apply() override;
+};
+
 class GuiScaleOption : public ValuesOption
 {
 public:
-	GuiScaleOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : ValuesOption(key, name, initial, values)
-	{
-	}
+	GuiScaleOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : ValuesOption(key, name, initial, values) {}
 
 	void apply() override;
+};
+
+class GammaOption : public FloatOption
+{
+public:
+	GammaOption(const std::string& key, const std::string& name, float initial) : FloatOption(key, name, initial, 0.01f) {}
+
+	void apply() override;
+	std::string getDisplayValue() const override;
 };
 
 class LogoTypeOption : public ValuesOption
 {
 public:
-	LogoTypeOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : ValuesOption(key, name, initial, values)
-	{
-	}
+	LogoTypeOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : ValuesOption(key, name, initial, values) {}
 
 	void apply() override;
 };
@@ -341,9 +365,7 @@ public:
 class UIThemeOption : public ValuesOption
 {
 public:
-	UIThemeOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : ValuesOption(key, name, initial, values)
-	{
-	}
+	UIThemeOption(const std::string& key, const std::string& name, int initial, const ValuesBuilder& values) : ValuesOption(key, name, initial, values) {}
 
 	void apply() override;
 };
@@ -351,11 +373,28 @@ public:
 class HUDSizeOption : public MinMaxOption
 {
 public:
-	HUDSizeOption(const std::string& key, const std::string& name, int initial) : MinMaxOption(key, name, initial, HUD_SIZE_1, HUD_SIZE_3 + 1)
-	{
-	}
+	HUDSizeOption(const std::string& key, const std::string& name, int initial) : MinMaxOption(key, name, initial, HUD_SIZE_1, HUD_SIZE_3 + 1) {}
 
 	std::string getDisplayValue() const override;
+};
+
+class SwapJumpSneakOption : public BoolOption
+{
+public:
+	SwapJumpSneakOption(const std::string& key, const std::string& name, bool initial = false) : BoolOption(key, name, initial) {}
+
+	void apply() override;
+};
+
+class DpadSizeOption : public FloatOption
+{
+public:
+	DpadSizeOption(const std::string& key, const std::string& name, float initial = 1.0f) : FloatOption(key, name, initial, 0.05f) {}
+
+	void apply() override;
+	void addUnit(int mul) override { set(Mth::clamp(get() + mul * m_unit, 0.5f, 1.5f)); }
+	void fromFloat(float v) override { set(0.5f + v); }
+	float toFloat() const override { return get() - 0.5f; }
 };
 
 class Options
@@ -389,6 +428,7 @@ private:
 	void _initDefaultValues();
 	void _load();
 	AsyncTask _saveAsync();
+
 public:
 	Options(Minecraft*, const std::string& folderPath = "");
 
@@ -423,6 +463,7 @@ public:
 	friend class SensitivityOption;
 	friend class IntOption;
 	friend class HUDSizeOption;
+	friend class DpadSizeOption;
 
 	FloatOption m_musicVolume;
 	FloatOption m_masterVolume;
@@ -431,21 +472,23 @@ public:
 	ValuesOption m_viewDistance;
 	BoolOption m_viewBobbing;
 	BoolOption m_anaglyphs;
-	uint8_t field_16;
+	bool m_bLimitFramerate;
 	FancyGraphicsOption m_fancyGraphics;
 	AOOption m_ambientOcclusion;
-	uint8_t field_19; // use Mouse as input for breaking
-	std::string field_1C;
+	bool m_bUseMouseForDigging;
+	std::string m_skin;
 	ValuesOption m_difficulty;
 	BoolOption m_hideGui;
 	BoolOption m_thirdPerson;
-	uint8_t field_23E;
 	BoolOption m_flightHax;
-	uint8_t field_240;
-	bool field_241;
-	float field_244;
+	SwapJumpSneakOption m_swapJumpSneak;
+	DpadSizeOption m_dpadSize;
+	bool field_240; // seems like it's doing some sort of mouse smoothing
+	bool m_bFixedCamera;
+	float m_flySpeed;
 	float field_248;
-	int field_24C;
+	GuiScaleOption m_guiScale;
+	GammaOption m_gamma;
 	StringOption m_playerName;
 	BoolOption m_serverVisibleDefault;
 	BoolOption m_autoJump;
@@ -454,14 +497,15 @@ public:
 	GraphicsOption m_fancyGrass;
 	GraphicsOption m_biomeColors;
 	BoolOption m_splitControls;
+	ControllerOption m_bUseController;
 	BoolOption m_dynamicHand;
 	BoolOption m_menuPanorama;
-	GuiScaleOption m_guiScale;
 	StringOption m_lang;
 	UIThemeOption m_uiTheme;
 	LogoTypeOption m_logoType;
 	HUDSizeOption m_hudSize;
 	BoolOption m_classicCrafting;
+	VsyncOption m_vSync;
 	ResourcePackStack m_resourcePacks;
 };
 
@@ -482,8 +526,8 @@ public:
 	OPTION(m_sensitivity);                 \
 	OPTION(m_invertMouse);                 \
 	OPTION(m_splitControls); idxSplit = currentIndex; \
-	/*OPTION(m_swapJumpSneak);*/           \
-	/*OPTION(m_buttonSize);*/              \
+	OPTION(m_swapJumpSneak); idxSwapJumpSneak = currentIndex; \
+	OPTION(m_dpadSize); idxDpadSize = currentIndex; \
 	OPTION(m_autoJump);                    \
 
 #define OPTIONS_LIST_CONTROLS_FEEDBACK     \
@@ -501,11 +545,13 @@ public:
 	/*OPTION(m_antiAliasing);*/            \
 	/*OPTION(m_guiScale);*/                \
 	/*OPTION(m_fov);*/                     \
+	OPTION(m_gamma);                       \
 	OPTION(m_ambientOcclusion);            \
 	OPTION(m_fancyGraphics);               \
 	OPTION(m_viewBobbing);                 \
 	OPTION(m_anaglyphs);                   \
 	OPTION(m_blockOutlines);               \
+	OPTION(m_vSync); idxVSync = currentIndex; \
 	OPTION(m_fancyGrass);                  \
 	OPTION(m_biomeColors);                 \
 	OPTION(m_dynamicHand);                 \

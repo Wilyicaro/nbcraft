@@ -33,9 +33,12 @@ public:
 	static std::string getExtension(const std::string& path);
 
 	static std::string toString(int value);
+	static std::string toString(float value);
+#ifndef MC_NO_WSTRING
 	static std::string toString(const wchar_t* str);
 	static std::string toString(const std::wstring& str);
 	static std::wstring toWideString(const std::string& str);
+#endif
 
 	template<typename T>
 	static bool remove(std::vector<T>& vec, const T& t)
@@ -64,7 +67,6 @@ public:
 		return removed;
 	}
 
-	// @TODO: reverse the actual thing? This is something different, but I'm lazy. It uses std::string::replace
 	static void stringReplace(std::string& in, const std::string& what, const std::string& with)
 	{
 		//snippet from Zahlman's post on gamedev:  http://www.gamedev.net/community/forums/topic.asp?topic_id=372125
@@ -83,9 +85,9 @@ public:
 		int32_t result = 0;
 
 		const size_t size = str.size();
-		for (size_t i = 0; i < size; i++)
+		for (size_t i = 0; i < size; ++i)
 		{
-			result = result * 31 + str.at(i);
+			result = result * 31 + str[i];
 		}
 
 

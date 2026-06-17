@@ -29,6 +29,8 @@ public:
 	int getScreenHeight() const override;
 	void showDialog(eDialogType) override;
 	std::string getDateString(int time) override;
+	void setVSyncEnabled(bool enabled) override;
+	bool isVSyncSwitchable() const override;
 
 	// Also add these to allow proper turning within the game.
 	void recenterMouse() override;
@@ -55,6 +57,7 @@ public:
 	void setExternalStoragePath(const std::string& path);
 
 	AssetFile readAssetFile(const std::string&, bool) const override;
+	std::string getAssetPath(const std::string&) const override;
 
 private:
 	void changeKeyboardVisibility(bool bShown);

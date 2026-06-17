@@ -2,6 +2,7 @@
 #include "RenderContextD3D9.hpp"
 #include "compat/PlatformDefinitions.h"
 #include "common/Logger.hpp"
+#include "common/Mth.hpp"
 #include "renderer/hal/d3d9/helpers/ErrorHandlerD3D9.hpp"
 
 using namespace mce;
@@ -44,14 +45,58 @@ bool RenderContextD3D9::VertexDeclID::operator==(const RenderContextD3D9::Vertex
 }
 
 RenderContextD3D9::RenderContextD3D9()
-    : RenderContextBase()
+    : RenderContextD3D()
 {
     memset(&m_viewport, 0, sizeof(m_viewport));
     m_width = 0;
     m_height = 0;
 
+    memset(&m_shaderLangVersions, -1, sizeof(m_shaderLangVersions));
+
     // wasn't here in 0.12.1, but where else is it supposed to go?
     createDeviceResources();
+}
+
+// Scaling factor for the input
+#define C_GAMMA_RANGE_SCALE 1.5f // Assumed 1.0 (range of gamma shift)
+// Base gamma value
+#define C_GAMMA_BASE_OFFSET 0.5f // Assumed 0.5 (min gamma)
+
+bool RenderContextD3D9::setGamma(Gamma gamma)
+{
+    if (!RenderContextBase::setGamma(gamma))
+        return false;
+    
+    // Calculate the target Gamma value based on linear equation
+    // Formula: Gamma = ((Input / 32768) * Scale) + Base
+    float normalized = (float)gamma / INT16_MAX;
+    float scaled = normalized * C_GAMMA_RANGE_SCALE;
+    float calculatedGamma = scaled + C_GAMMA_BASE_OFFSET;
+
+    // Calculate the exponent for the ramp generation (1.0 / Gamma)
+    float exponent = 1.0f / calculatedGamma;
+
+    D3DGAMMARAMP ramp;
+    for (int i = 0; i < 256; i++)
+    {
+        // Normalize index to 0.0 - 1.0 range
+        float linear = (float)i / 255.0f;
+
+        // Apply gamma curve
+        float corrected = powf(linear, exponent);
+
+        // Scale to 16-bit color range (0 - 65535)
+        float scaled = corrected * UINT16_MAX;
+
+        int val = Mth::clamp((int)scaled, 0, UINT16_MAX);
+        ramp.red[i]   = (uint16_t)val;
+        ramp.green[i] = (uint16_t)val;
+        ramp.blue[i]  = (uint16_t)val;
+    }
+
+    m_d3dDevice->SetGammaRamp(0, 0x0, &ramp);
+
+    return true;
 }
 
 void RenderContextD3D9::draw(PrimitiveMode primitiveMode, unsigned int startOffset, unsigned int count)
@@ -68,8 +113,15 @@ void RenderContextD3D9::drawIndexed(PrimitiveMode primitiveMode, unsigned int co
 
 void RenderContextD3D9::drawIndexed(PrimitiveMode primitiveMode, unsigned int count, unsigned int startOffset, uint8_t indexSize)
 {
+	unsigned int vertexCount;
+#ifdef _XBOX
+	vertexCount = 0;
+#else
+    vertexCount = _getVertexCount(primitiveMode, count);
+#endif
+
     ErrorHandlerD3D9::checkForErrors(
-        m_d3dDevice->DrawIndexedPrimitive(modeMap[primitiveMode], 0, 0, 0, startOffset, _getPrimitiveCount(primitiveMode, count))
+        m_d3dDevice->DrawIndexedPrimitive(modeMap[primitiveMode], 0, 0, vertexCount, startOffset, _getPrimitiveCount(primitiveMode, count))
     );
 }
 
@@ -152,6 +204,40 @@ void RenderContextD3D9::swapBuffers()
 {
     HRESULT hr = m_d3dDevice->Present(NULL, NULL, NULL, NULL);
     ErrorHandlerD3D9::checkForErrors(hr);
+}
+
+void RenderContextD3D9::getShaderLangVersion(ShaderType shaderType, int& major, int& minor)
+{
+    // Check cache
+    int* shaderLangVersion = m_shaderLangVersions[shaderType];
+    major = shaderLangVersion[0];
+    minor = shaderLangVersion[1];
+
+    if (major != -1 && minor != -1)
+        return;
+
+    D3DCAPS9 caps;
+    m_d3dDevice->GetDeviceCaps(&caps);
+
+    switch (shaderType)
+    {
+    case SHADER_TYPE_VERTEX:
+        major = D3DSHADER_VERSION_MAJOR(caps.VertexShaderVersion);
+        minor = D3DSHADER_VERSION_MINOR(caps.VertexShaderVersion);
+        break;
+    case SHADER_TYPE_FRAGMENT:
+        major = D3DSHADER_VERSION_MAJOR(caps.PixelShaderVersion);
+        minor = D3DSHADER_VERSION_MINOR(caps.PixelShaderVersion);
+        break;
+
+    default:
+        LOG_E("Unknown shader type: %d", shaderType);
+        throw std::bad_cast();
+    }
+
+    // Cache the result
+    shaderLangVersion[0] = major;
+    shaderLangVersion[1] = minor;
 }
 
 bool RenderContextD3D9::supports8BitIndices() const

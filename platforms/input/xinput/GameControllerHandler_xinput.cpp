@@ -1,10 +1,4 @@
-#ifdef _XBOX
-#include <xtl.h>
-#else
-#define WIN32_LEAN_AND_MEAN
-#include <windows.h>
-#endif
-
+#include "XInput.hpp"
 #include "GameControllerHandler_xinput.hpp"
 #include "client/player/input/Keyboard.hpp"
 #include "client/player/input/GameControllerManager.hpp"
@@ -16,6 +10,12 @@
 GameControllerHandler_xinput::GameControllerHandler_xinput()
 	: GameControllerHandler()
 {
+    XInput::init();
+
+    if (!XInput::GetState)
+        for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
+            m_connectionStates[i] = GameController::STATE_DISCONNECTED;
+
     _initButtonMap();
 
     // need to have the connection states ready for AppPlatform->hasGamepad()
@@ -78,10 +78,13 @@ void GameControllerHandler_xinput::_processMotion(GameController::ID controllerI
 
 void GameControllerHandler_xinput::refresh()
 {
+    if (!XInput::GetState)
+        return;
+
     // Ingest our input "queue"
-    for (DWORD i = 0; i < XUSER_MAX_COUNT; i++)
+    for (DWORD i = 0; i < XUSER_MAX_COUNT; ++i)
     {
-        DWORD result = XInputGetState(i, &m_inputStates.m_inputState[i]);
+        DWORD result = XInput::GetState(i, &m_inputStates.m_inputState[i]);
         m_connectionStates[i] = result == ERROR_SUCCESS ? GameController::STATE_CONNECTED : GameController::STATE_DISCONNECTED;
     }
 
@@ -103,10 +106,10 @@ void GameControllerHandler_xinput::refresh()
 
 float GameControllerHandler_xinput::normalizeAxis(float raw, float deadzone) const
 {
-    return Mth::Max(-1.0f, raw / 32767.0f); // -32768 to 32767
+    return Mth::Max(-1.0f, raw / INT16_MAX);
 
     // Deadzone is currently handled in GameControllerManager
-    /*float v3 = Mth::Max(-1.0f, raw / 32767.0f);
+    /*float v3 = Mth::Max(-1.0f, raw / INT16_MAX);
     float v4 = fabs(v3);
     float v5;
     if (v4 >= deadzone)
@@ -118,8 +121,8 @@ float GameControllerHandler_xinput::normalizeAxis(float raw, float deadzone) con
 
 void GameControllerHandler_xinput::normalizeAxes(Vec2& io, float deadzone) const
 {
-    io.x = Mth::Max(-1.0f, io.x / 32767.0f);
-    io.y = Mth::Max(-1.0f, io.y / 32767.0f);
+    io.x = Mth::Max(-1.0f, io.x / INT16_MAX);
+    io.y = Mth::Max(-1.0f, io.y / INT16_MAX);
 
     // Deadzone is currently handled in GameControllerManager
     /*float length = io.length();

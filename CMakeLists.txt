@@ -1,19 +1,34 @@
 cmake_minimum_required(VERSION 3.16.0)
-project(reminecraftpe)
+project(nbcraft)
 
 # Store Output In Top-Level Build Directory
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}")
 
-set(CMAKE_C_STANDARD 99)
-if(NOT NINTENDO_SWITCH)
-    set(CMAKE_C_EXTENSIONS OFF)
-    set(CMAKE_CXX_EXTENSIONS OFF)
+# MC_VERSION string is an 7 digit number with 4 components, era, major, minor, and patch.
+# Each component takes 2 digits, except era, which takes 1. Major, minor, and patch are self explanatory,
+# era designates if the version is from alpha, beta, or release. Alpha is 1, beta is 2, and release is 3.
+# Beta 1.7.3 would be encoded as 2010703, and release 1.2.1 would be 3010201.
+set(MC_VERSION "" CACHE STRING "Version to emulate")
+if (MC_VERSION)
+    add_compile_definitions(MC_VERSION=${MC_VERSION})
 endif()
 
+set(CMAKE_C_STANDARD 99)
+
 # Warnings
+if (CMAKE_CXX_COMPILER_ID STREQUAL "GNU" AND
+    CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 12)
+    set(ENABLE_WCXX11_EXTENSIONS ON)
+elseif (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(ENABLE_WCXX11_EXTENSIONS ON)
+endif()
+if (ENABLE_WCXX11_EXTENSIONS)
+    add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wc++11-extensions>)
+endif()
+
 add_compile_options(-Wall -Wignored-qualifiers -Wvariadic-macros -pedantic -Wno-long-long -Wno-c++11-long-long -Wno-newline-eof -Wno-empty-translation-unit)
-add_compile_options($<$<COMPILE_LANGUAGE:CXX>:-Wc++11-extensions>)
+
 if(WERROR)
     add_compile_options(-Werror)
 endif()
@@ -23,10 +38,10 @@ endif()
 
 # Detect Windows
 include(CheckSymbolExists)
-check_symbol_exists("_WIN32" "" REMCPE_WIN32)
+check_symbol_exists("_WIN32" "" NBC_WIN32)
 
 # Windows Linking
-if(REMCPE_WIN32)
+if(NBC_WIN32)
     # Modern MinGW doesn't support C++98 and will error if you try to use it
     set(CMAKE_CXX_STANDARD 11)
 else()
@@ -34,7 +49,7 @@ else()
 endif()
 
 # Platform-specific stuff #
-if(REMCPE_WIN32) # Windows
+if(NBC_WIN32) # Windows
     add_link_options(
         -static-libgcc
         -static-libstdc++
@@ -103,15 +118,31 @@ else()
     link_libraries(Threads::Threads)
 endif()
 
+# Enable dynamic OpenGL (Always enabled on Windows & Dreamcast regardless).
+# This only works on some platforms, and is only tested on Linux with Mesa, and Windows.
+# It will NOT work on Darwin based platforms like iOS or macOS, because they have
+# different symbol names for their GL functions and use macros to provide compatability.
+# It will also break any staticly linked builds.
+if(NBC_DYNAMIC_GL)
+    add_compile_definitions(MC_DYNAMIC_GL=1)
+endif()
+
+# Disables all use of wstring to allow building on C++ standard libraries without wstring support.
+if(NBC_NO_WSTRING)
+    add_compile_definitions(MC_NO_WSTRING)
+endif()
+
 # Disable thread local storage (needed for C++98 & iOS)
 add_compile_definitions(RAPIDJSON_NO_THREAD_LOCAL STBI_NO_THREAD_LOCALS)
 
-if(NOT DEFINED REMCPE_GFX_API)
+if(NOT DEFINED NBC_GFX_API)
 	message(STATUS "No GFX API specified, defaulting to OGL...")
-	set(REMCPE_GFX_API "OGL" CACHE STRING "HAL GFX API")
+	set(NBC_GFX_API "OGL" CACHE STRING "HAL GFX API")
 endif()
 
-message(STATUS "Selected GFX API: ${REMCPE_GFX_API}")
+message(STATUS "Selected GFX API: ${NBC_GFX_API}")
+
+include_directories(.)
 
 # stb_image And Other Libraries
 add_subdirectory(thirdparty/stb_image EXCLUDE_FROM_ALL)
@@ -124,7 +155,7 @@ add_subdirectory(platforms)
 
 # Assets
 if(EMSCRIPTEN)
-    target_link_options(reminecraftpe PRIVATE --use-preload-plugins --preload-file "${CMAKE_CURRENT_SOURCE_DIR}/game@/")
+    target_link_options(nbcraft PRIVATE --use-preload-plugins --preload-file "${CMAKE_CURRENT_SOURCE_DIR}/game@/")
 elseif(XENON)
     # idk, we'll figure it out later
     # Example: adding a binary file (like a texture or sound)

@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.16.0)
-project(reminecraftpe-core)
+project(nbcraft-core)
 
 # Build
-add_library(reminecraftpe-core STATIC
+add_library(nbcraft-core STATIC
     common/threading/CThread.cpp
     common/threading/AsyncTask.cpp
     common/DataIO.cpp
@@ -16,6 +16,7 @@ add_library(reminecraftpe-core STATIC
     common/utility/AlignmentHelper.cpp
     common/utility/JsonParser.cpp
     common/utility/Singleton.cpp
+    common/utility/ByteBuffer.cpp
     common/Utils.cpp
     client/app/App.cpp
     client/app/AppPlatform.cpp
@@ -94,11 +95,13 @@ add_library(reminecraftpe-core STATIC
     client/gui/Screen.cpp
     client/gui/ScreenChooser.cpp
     client/gui/ScreenChooser_Console.cpp
+	client/gui/ScreenChooser_Pocket.cpp
     client/gui/screens/CreditsScreen.cpp
     client/gui/screens/OptionsScreen.cpp
     client/gui/screens/OptionsScreen_Console.cpp
     client/gui/screens/StartMenuScreen.cpp
     client/gui/screens/StartMenuScreen_Console.cpp
+	client/gui/screens/StartMenuScreen_Pocket.cpp
     client/gui/screens/ConvertWorldScreen.cpp
     client/gui/screens/CreateWorldScreen.cpp
     client/gui/screens/CreateWorldScreen_Console.cpp
@@ -111,6 +114,7 @@ add_library(reminecraftpe-core STATIC
     client/gui/screens/ConfirmScreen.cpp
     client/gui/screens/DeleteWorldScreen.cpp
     client/gui/screens/DeathScreen.cpp
+    client/gui/screens/DeathScreen_Console.cpp
     client/gui/screens/ChatScreen.cpp
     client/gui/screens/RenameMPLevelScreen.cpp
     client/gui/screens/ProgressScreen.cpp
@@ -122,9 +126,11 @@ add_library(reminecraftpe-core STATIC
     client/gui/screens/DeathScreen.cpp
     client/gui/screens/PanelScreen_Console.cpp
     client/gui/screens/inventory/ContainerScreen.cpp
+    client/gui/screens/inventory/CreativeScreen.cpp
     client/gui/screens/inventory/InventoryScreen.cpp
     client/gui/screens/inventory/CraftingScreen.cpp
     client/gui/screens/inventory/ClassicCraftingScreen_Console.cpp
+    client/gui/screens/inventory/FurnaceScreen.cpp
     client/gui/screens/inventory/ChestScreen.cpp
     client/gui/components/ScrolledSelectionList.cpp
     client/gui/components/AvailableGamesList.cpp
@@ -139,6 +145,8 @@ add_library(reminecraftpe-core STATIC
     client/gui/components/WorldSelectionList.cpp
     client/gui/components/OptionList.cpp
     client/gui/components/ScrollRenderer_Console.cpp
+	client/gui/components/ImageButton.cpp
+	client/gui/components/LargeImageButton.cpp
     client/locale/Language.cpp
     client/gui/Gui.cpp
     client/gui/GuiComponent.cpp
@@ -284,6 +292,8 @@ add_library(reminecraftpe-core STATIC
     world/entity/Spider.cpp
     world/entity/Zombie.cpp
     world/entity/Arrow.cpp
+	world/entity/ThrownEgg.cpp
+	world/entity/Snowball.cpp
     world/entity/WaterAnimal.cpp
     world/entity/Monster.cpp
     world/entity/Rocket.cpp
@@ -353,44 +363,57 @@ add_library(reminecraftpe-core STATIC
     world/item/TilePlanterItem.cpp
     world/item/CameraItem.cpp
     world/item/TileItem.cpp
+    world/item/CoalItem.cpp
     world/item/Inventory.cpp
     world/item/crafting/Recipes.cpp
     world/item/crafting/FurnaceRecipes.cpp
     world/item/crafting/SingleInputRecipe.cpp
     world/item/crafting/ShapedRecipe.cpp
     world/item/crafting/ShapelessRecipe.cpp
-    world/ContainerListener.cpp
+    world/inventory/Container.cpp
+    world/inventory/ContainerListener.cpp
+    world/inventory/CompoundContainer.cpp
+    world/inventory/ContainerContentChangeListener.cpp
+    world/inventory/ContainerSizeChangeListener.cpp
     world/inventory/ContainerMenu.cpp
     world/inventory/InventoryMenu.cpp
     world/inventory/CraftingMenu.cpp
+    world/inventory/FurnaceMenu.cpp
     world/inventory/ChestMenu.cpp
+    world/inventory/CreativeMenu.cpp
     world/inventory/Slot.cpp
     world/inventory/ResultSlot.cpp
     world/inventory/ArmorSlot.cpp
+    world/inventory/FurnaceResultSlot.cpp
     world/inventory/CraftingContainer.cpp
     world/inventory/ResultContainer.cpp
     world/inventory/SimpleContainer.cpp
-    world/CompoundContainer.cpp
     world/item/DoorItem.cpp
     world/item/ItemStack.cpp
     world/item/RocketItem.cpp
     world/item/Item.cpp
+	world/item/FlintAndSteelItem.cpp
     world/item/FoodItem.cpp
     world/item/SeedItem.cpp
     world/item/ArmorItem.cpp
     world/item/HoeItem.cpp
     world/item/DyePowderItem.cpp
+    world/item/CoalItem.cpp
     world/item/ToolItem.cpp
     world/item/WeaponItem.cpp
     world/item/BowItem.cpp
     world/item/AuxTileItem.cpp
     world/item/ClothItem.cpp
     world/item/DyeColor.cpp
+	world/item/EggItem.cpp
     world/item/SlabItem.cpp
+	world/item/SnowballItem.cpp
     world/particle/RedDustParticle.cpp
     world/particle/TerrainParticle.cpp
+    world/particle/NoteParticle.cpp
     world/particle/BubbleParticle.cpp
     world/particle/ExplodeParticle.cpp
+	world/particle/ItemParticle.cpp
     world/particle/ParticleEngine.cpp
     world/particle/FlameParticle.cpp
     world/particle/SmokeParticle.cpp
@@ -424,6 +447,10 @@ add_library(reminecraftpe-core STATIC
     world/tile/OreTile.cpp
     world/tile/StairTile.cpp
     world/tile/SandStoneTile.cpp
+    world/tile/EntityTile.cpp
+    world/tile/ChestTile.cpp
+    world/tile/FurnaceTile.cpp
+    world/tile/MusicTile.cpp
     world/tile/FireTile.cpp
     world/tile/StoneSlabTile.cpp
     world/tile/LiquidTile.cpp
@@ -444,7 +471,16 @@ add_library(reminecraftpe-core STATIC
     world/tile/GlowstoneTile.cpp
     world/tile/Web.cpp
     world/tile/FenceTile.cpp
+    world/tile/FenceGateTile.cpp
     world/tile/CraftingTableTile.cpp
+	world/tile/TrapDoorTile.cpp
+	world/tile/CakeTile.cpp
+    world/tile/entity/TileEntity.cpp
+    world/tile/entity/TileEntityType.cpp
+    world/tile/entity/ChestTileEntity.cpp
+    world/tile/entity/FurnaceTileEntity.cpp
+    world/tile/entity/MusicTileEntity.cpp
+    world/Facing.cpp
     renderer/GL/GL.cpp
     renderer/Attribute.cpp
     renderer/ConstantBufferMetaData.cpp
@@ -471,22 +507,24 @@ add_library(reminecraftpe-core STATIC
     renderer/VertexFormat.cpp
     renderer/WeatherConstants.cpp
     renderer/WorldConstants.cpp
+    renderer/hal/AlphaStateDescription.cpp
     renderer/hal/BlendStateDescription.cpp
     renderer/hal/DepthStencilStateDescription.cpp
-    renderer/hal/FixedPipelineStateDescription.cpp
+    renderer/hal/RenderStateDescription.cpp
     renderer/hal/FogStateDescription.cpp
     renderer/hal/ImageDescription.cpp
     renderer/hal/RasterizerStateDescription.cpp
     renderer/hal/StencilFaceDescription.cpp
     renderer/hal/TextureDescription.cpp
     renderer/hal/ViewportOrigin.cpp
+    renderer/hal/base/AlphaStateBase.cpp
     renderer/hal/base/BlendStateBase.cpp
     renderer/hal/base/BufferBase.cpp
     renderer/hal/base/ConstantBufferBase.cpp
     renderer/hal/base/ConstantBufferConstantsBase.cpp
     renderer/hal/base/ConstantBufferContainerBase.cpp
     renderer/hal/base/DepthStencilStateBase.cpp
-    renderer/hal/base/FixedPipelineStateBase.cpp
+    renderer/hal/base/RenderStateBase.cpp
     renderer/hal/base/FogStateBase.cpp
     renderer/hal/base/FrameBufferObjectBase.cpp
     renderer/hal/base/ImmediateBufferBase.cpp
@@ -499,12 +537,12 @@ add_library(reminecraftpe-core STATIC
     renderer/hal/base/ShaderConstantWithDataBase.cpp
     renderer/hal/base/ShaderContextBase.cpp
     renderer/hal/base/ShaderProgramBase.cpp
+    renderer/hal/base/VertexBufferStateBase.cpp
     renderer/hal/base/TextureBase.cpp
     renderer/hal/enums/BlendTarget_JsonParser.cpp
     renderer/hal/enums/ComparisonFunc_JsonParser.cpp
     renderer/hal/enums/PrimitiveMode_JsonParser.cpp
-    renderer/hal/enums/RenderState_JsonParser.cpp
-    renderer/hal/enums/RenderState_JsonParser.hpp
+    renderer/hal/enums/RenderStateType_JsonParser.cpp
     renderer/hal/enums/ShaderPrimitiveTypes.cpp
     renderer/hal/enums/ShaderStagesBits_JsonParser.cpp
     renderer/hal/enums/StencilOp_JsonParser.cpp
@@ -512,14 +550,17 @@ add_library(reminecraftpe-core STATIC
     renderer/hal/enums/VertexField.cpp
     renderer/hal/enums/VertexField_JsonParser.cpp
     renderer/hal/helpers/TextureHelper.cpp
-    renderer/hal/null/FixedPipelineStateNull.cpp
+    renderer/hal/null/AlphaStateNull.cpp
+    renderer/hal/null/RenderStateNull.cpp
     renderer/hal/null/FogStateNull.cpp
+    renderer/hal/null/VertexBufferStateNull.cpp
+    renderer/hal/interface/AlphaState.cpp
     renderer/hal/interface/BlendState.cpp
     renderer/hal/interface/Buffer.cpp
     renderer/hal/interface/ConstantBuffer.cpp
     renderer/hal/interface/ConstantBufferContainer.cpp
     renderer/hal/interface/DepthStencilState.cpp
-    renderer/hal/interface/FixedPipelineState.cpp
+    renderer/hal/interface/RenderState.cpp
     renderer/hal/interface/FogState.cpp
     renderer/hal/interface/ImmediateBuffer.cpp
     renderer/hal/interface/RasterizerState.cpp
@@ -530,110 +571,52 @@ add_library(reminecraftpe-core STATIC
     renderer/hal/interface/ShaderProgram.cpp
     renderer/hal/interface/Texture.cpp
 )
-target_include_directories(reminecraftpe-core PUBLIC . ..)
+target_include_directories(nbcraft-core PUBLIC .)
 
 # OGL Shader variant build hack
-if(REMCPE_GFX_API STREQUAL "OGL_SHADERS")
-    target_compile_definitions(reminecraftpe-core PUBLIC FEATURE_GFX_SHADERS)
-    unset(REMCPE_GFX_API CACHE)
-    set(REMCPE_GFX_API "OGL" CACHE STRING "HAL GFX API")
+if(NBC_GFX_API STREQUAL "OGL_SHADERS")
+    target_compile_definitions(nbcraft-core PUBLIC FEATURE_GFX_SHADERS)
+    unset(NBC_GFX_API CACHE)
+    set(NBC_GFX_API "OGL" CACHE STRING "HAL GFX API")
 endif()
 
-if(REMCPE_GFX_API STREQUAL "OGL")
-    target_compile_definitions(reminecraftpe-core PUBLIC MCE_GFX_API_OGL=1)
-    target_sources(reminecraftpe-core PRIVATE
-        renderer/hal/ogl/API_OGL.cpp
-        renderer/hal/ogl/BlendStateOGL.cpp
-        renderer/hal/ogl/BufferOGL.cpp
-        renderer/hal/ogl/ConstantBufferContainerOGL.cpp
-        renderer/hal/ogl/DepthStencilStateOGL.cpp
-        renderer/hal/ogl/FixedPipelineStateOGL.cpp
-        renderer/hal/ogl/FogStateOGL.cpp
-        renderer/hal/ogl/GPUEventsOGL.cpp
-        renderer/hal/ogl/ImmediateBufferOGL.cpp
-        renderer/hal/ogl/ProfileSectionOGL.cpp
-        renderer/hal/ogl/RasterizerStateOGL.cpp
-        renderer/hal/ogl/RenderContextOGL.cpp
-        renderer/hal/ogl/RenderDeviceOGL.cpp
-        renderer/hal/ogl/ResourceOGL.cpp
-        renderer/hal/ogl/ShaderConstantOGL.cpp
-        renderer/hal/ogl/ShaderConstantWithDataOGL.cpp
-        renderer/hal/ogl/ShaderOGL.cpp
-        renderer/hal/ogl/ShaderProgramOGL.cpp
-        renderer/hal/ogl/ShaderResourceOGL.cpp
-        renderer/hal/ogl/ShaderUniformOGL.cpp
-        renderer/hal/ogl/TextureOGL.cpp
-        renderer/hal/ogl/helpers/ErrorHandlerOGL.cpp
-        renderer/platform/ogl/Extensions.cpp
-        renderer/platform/ogl/ShaderPrecision.cpp
-    )
-elseif(REMCPE_GFX_API STREQUAL "D3D11")
-    target_compile_definitions(reminecraftpe-core PUBLIC MCE_GFX_API_D3D11=1 FEATURE_GFX_SHADERS)
-    target_sources(reminecraftpe-core PRIVATE
-        renderer/hal/d3d11/API_D3D11.cpp
-        renderer/hal/d3d11/BlendStateD3D11.cpp
-        renderer/hal/d3d11/BufferD3D11.cpp
-        renderer/hal/d3d11/ConstantBufferContainerD3D11.cpp
-        renderer/hal/d3d11/DepthStencilStateD3D11.cpp
-        renderer/hal/d3d11/GPUEventsD3D11.cpp
-        renderer/hal/d3d11/ImmediateBufferD3D11.cpp
-        renderer/hal/d3d11/ProfileSectionD3D11.cpp
-        renderer/hal/d3d11/RasterizerStateD3D11.cpp
-        renderer/hal/d3d11/RenderContextD3D11.cpp
-        renderer/hal/d3d11/RenderDeviceD3D11.cpp
-        renderer/hal/d3d11/ShaderConstantD3D11.cpp
-        renderer/hal/d3d11/ShaderConstantWithDataD3D11.cpp
-        renderer/hal/d3d11/ShaderD3D11.cpp
-        renderer/hal/d3d11/ShaderProgramD3D11.cpp
-        renderer/hal/d3d11/ShaderResourceD3D11.cpp
-        renderer/hal/d3d11/TextureD3D11.cpp
-        renderer/hal/d3d11/helpers/TextureHelperD3D11.cpp
-        renderer/hal/dxgi/API_DXGI.cpp
-        renderer/hal/dxgi/helpers/ErrorHandlerDXGI.cpp
-        renderer/hal/dxgi/helpers/TextureHelperDXGI.cpp
-    )
-elseif((NOT DEFINED REMCPE_GFX_API) OR (REMCPE_GFX_API STREQUAL "Null"))
-    target_compile_definitions(reminecraftpe-core PUBLIC MCE_GFX_API_NULL=1)
-    target_sources(reminecraftpe-core PRIVATE
-        renderer/hal/null/BlendStateNull.cpp
-        renderer/hal/null/BufferNull.cpp
-        renderer/hal/null/ConstantBufferContainerNull.cpp
-        renderer/hal/null/DepthStencilStateNull.cpp
-        renderer/hal/null/ImmediateBufferNull.cpp
-        renderer/hal/null/RasterizerStateNull.cpp
-        renderer/hal/null/RenderContextNull.cpp
-        renderer/hal/null/RenderDeviceNull.cpp
-        renderer/hal/null/ShaderConstantNull.cpp
-        renderer/hal/null/ShaderConstantWithDataNull.cpp
-        renderer/hal/null/ShaderNull.cpp
-        renderer/hal/null/ShaderProgramNull.cpp
-        renderer/hal/null/TextureNull.cpp
-    )
+if(NBC_GFX_API STREQUAL "OGL")
+    target_compile_definitions(nbcraft-core PUBLIC MCE_GFX_API_OGL=1)
+	add_subdirectory(renderer/hal/ogl nbcraft-renderer-ogl)
+    target_link_libraries(nbcraft-core PUBLIC nbcraft-renderer-ogl)
+elseif(NBC_GFX_API STREQUAL "D3D11")
+    target_compile_definitions(nbcraft-core PUBLIC MCE_GFX_API_D3D11=1 FEATURE_GFX_SHADERS)
+	add_subdirectory(renderer/hal/d3d11 nbcraft-renderer-d3d11)
+    target_link_libraries(nbcraft-core PUBLIC nbcraft-renderer-d3d11)
+elseif((NOT DEFINED NBC_GFX_API) OR (NBC_GFX_API STREQUAL "Null"))
+    target_compile_definitions(nbcraft-core PUBLIC MCE_GFX_API_NULL=1)
+	add_subdirectory(renderer/hal/null nbcraft-renderer-null)
+    target_link_libraries(nbcraft-core PUBLIC nbcraft-renderer-null)
 else()
-    message(FATAL_ERROR "An unknown or unsupported GFX API was specified: ${REMCPE_GFX_API}")
+    message(FATAL_ERROR "An unknown or unsupported GFX API was specified: ${NBC_GFX_API}")
 endif()
 
 # RakNet
 add_subdirectory(../thirdparty/raknet raknet)
-target_link_libraries(reminecraftpe-core PUBLIC raknet)
+target_link_libraries(nbcraft-core PUBLIC raknet)
 
 # zlib
 add_library(zlib-interface INTERFACE)
-if(REMCPE_WIN32 OR XENON) # @TODO: libXenon has zlib included, how do we get to it?
-    # Compile Vendored ZLib
-    add_subdirectory(../thirdparty/zlib zlib)
-    target_link_libraries(zlib-interface INTERFACE zlib)
+if (NBC_SYSTEM_ZLIB)
+    # Use System ZLib, might be useful for some weird platform that needs to patch zlib
+    find_package(ZLIB REQUIRED)
+    target_link_libraries(zlib-interface INTERFACE ZLIB::ZLIB)
 elseif(EMSCRIPTEN)
     # Use Emscripten's ZLib
     set(ZLIB_FLAG -sUSE_ZLIB=1)
     target_compile_options(zlib-interface INTERFACE "${ZLIB_FLAG}")
     target_link_options(zlib-interface INTERFACE "${ZLIB_FLAG}")
 else()
-    # Use System ZLib
-    find_package(ZLIB REQUIRED)
-    target_link_libraries(zlib-interface INTERFACE ZLIB::ZLIB)
+    # Compile Vendored ZLib
+    add_subdirectory(../thirdparty/zlib zlib)
+    target_link_libraries(zlib-interface INTERFACE zlib)
 endif()
-target_link_libraries(reminecraftpe-core PUBLIC zlib-interface)
+target_link_libraries(nbcraft-core PUBLIC zlib-interface)
 
 # OGG Support
-target_link_libraries(reminecraftpe-core PUBLIC stb_vorbis)
+target_link_libraries(nbcraft-core PUBLIC stb_vorbis)

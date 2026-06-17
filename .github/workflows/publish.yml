@@ -10,24 +10,37 @@ jobs:
             fail-fast: false
             matrix:
                 include:
-                  - name: SDL 2
-                    flags: '-DREMCPE_PLATFORM=sdl2 -DREMCPE_GFX_API=OGL'
-                    packages: 'libsdl2-dev'
+                  - name: x86_64 SDL 2
+                    flags: '-DNBC_PLATFORM=sdl2 -DNBC_GFX_API=OGL'
+                    packages: 'libsdl2-dev libopenal-dev'
+                    runner: ubuntu-24.04
+                    arch: x86_64
+                  - name: i686 SDL 2
+                    flags: '-DNBC_PLATFORM=sdl2 -DNBC_GFX_API=OGL -DCMAKE_C_FLAGS=-m32 -DCMAKE_CXX_FLAGS=-m32'
+                    packages: 'gcc-multilib g++-multilib libsdl2-dev:i386 libopenal-dev:i386'
+                    runner: ubuntu-22.04
+                    arch: i686
+                  - name: aarch64 SDL 2
+                    flags: '-DNBC_PLATFORM=sdl2 -DNBC_GFX_API=OGL'
+                    packages: 'libsdl2-dev libopenal-dev'
+                    runner: ubuntu-24.04-arm
+                    arch: aarch64
         name: Linux (${{ matrix.name }})
-        runs-on: ubuntu-24.04
+        runs-on: ${{ matrix.runner }}
         steps:
           - name: Checkout Repository
             uses: actions/checkout@v6
             with:
                 submodules: true
+          - name: Enable i386 packages
+            if: ${{ matrix.arch == 'i686' }}
+            run: sudo dpkg --add-architecture i386
           - name: Install Dependencies
             run: |
                 sudo apt-get update
                 sudo apt-get install --no-install-recommends -y \
                     build-essential \
                     cmake ninja-build \
-                    libopenal-dev \
-                    zlib1g-dev \
                     ${{ matrix.packages }}
           - name: Build
             run: |
@@ -38,72 +51,62 @@ jobs:
                     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
                     ${{ matrix.flags }}
                 cmake --build .
-                strip reminecraftpe
+                strip nbcraft
           - name: Pack release
             run: |
-                mkdir ReMCPE
-                mv game/assets build/reminecraftpe ReMCPE
-                tar -czf ReMCPE-Linux-x86_64.tar.gz ReMCPE
+                mkdir NBCraft
+                mv game/assets build/nbcraft NBCraft
+                tar -czf NBCraft-Linux-${{ matrix.arch }}.tar.gz NBCraft
           - uses: alexellis/upload-assets@0.4.1
             env:
               GITHUB_TOKEN: ${{ github.token }}
             with:
-              asset_paths: '["ReMCPE-Linux-x86_64.tar.gz"]'
+              asset_paths: '["NBCraft-Linux-${{ matrix.arch }}.tar.gz"]'
 
-    # linux32:
-    #     strategy:
-    #         fail-fast: false
-    #         matrix:
-    #             include:
-    #               - name: SDL 2
-    #                 flags: '-DREMCPE_PLATFORM=sdl2 -DREMCPE_GFX_API=OGL'
-    #                 packages: 'libsdl2-dev:i386'
-    #     name: Linux 32-bit (${{ matrix.name }})
-    #     runs-on: ubuntu-24.04
-    #     steps:
-    #       - name: Checkout Repository
-    #         uses: actions/checkout@v6
-    #         with:
-    #             submodules: true
-    #       - name: Install Dependencies
-    #         run: |
-    #             sudo dpkg --add-architecture i386
-    #             sudo apt-get update
-    #             sudo apt-get install --no-install-recommends -y \
-    #                 build-essential \
-    #                 cmake ninja-build \
-    #                 gcc-multilib g++-multilib \
-    #                 libopenal-dev:i386 \
-    #                 zlib1g-dev:i386 \
-    #                 ${{ matrix.packages }}
-    #       - name: Build
-    #         run: |
-    #             mkdir build
-    #             cd build
-    #             cmake .. -GNinja \
-    #                 -DCMAKE_BUILD_TYPE=Release \
-    #                 -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-    #                 -DCMAKE_C_FLAGS='-m32' \
-    #                 -DCMAKE_CXX_FLAGS='-m32' \
-    #                 ${{ matrix.flags }}
-    #             cmake --build .
-    #             strip reminecraftpe
-    #       - name: Pack release
-    #         run: |
-    #             mkdir ReMCPE
-    #             mv game/assets build/reminecraftpe ReMCPE
-    #             tar -czf ReMCPE-Linux-x86.tar.gz ReMCPE
-    #       - uses: alexellis/upload-assets@0.4.1
-    #         env:
-    #           GITHUB_TOKEN: ${{ github.token }}
-    #         with:
-    #           asset_paths: '["ReMCPE-Linux-x86.tar.gz"]'
+    flatpak:
+        strategy:
+            fail-fast: false
+            matrix:
+                include:
+                  - name: x86_64 SDL 2
+                    gfx: OGL
+                    arch: x86_64
+                    runner: ubuntu-24.04
+                  - name: aarch64 SDL 2
+                    gfx: OGL
+                    arch: aarch64
+                    runner: ubuntu-24.04-arm
+        name: Flatpak (${{ matrix.name }})
+        runs-on: ${{ matrix.runner }}
+        steps:
+          - name: Checkout Repository
+            uses: actions/checkout@v6
+            with:
+                submodules: true
+          - name: Install Dependencies
+            run: |
+                sudo apt-get update
+                sudo apt-get install --no-install-recommends -y flatpak
+                flatpak --user remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+                flatpak --user install -y \
+                    org.freedesktop.Platform/${{ matrix.arch }}/25.08 \
+                    org.freedesktop.Sdk/${{ matrix.arch }}/25.08
+          - name: Build
+            run: ./platforms/linux/build-flatpak.sh
+            env:
+              ARCH: ${{ matrix.arch }}
+              NBC_GFX_API: ${{ matrix.gfx }}
+          - uses: alexellis/upload-assets@0.4.1
+            env:
+              GITHUB_TOKEN: ${{ github.token }}
+            with:
+              asset_paths: '["platforms/linux/build-flatpak/NBCraft-Linux-${{ matrix.arch }}.flatpak"]'
 
     macos:
         strategy:
             fail-fast: false
         name: macOS
-        runs-on: macos-15
+        runs-on: macos-26
         steps:
           - name: Checkout Repository
             uses: actions/checkout@v6
@@ -124,13 +127,13 @@ jobs:
                   ./platforms/macos/build.sh
           - name: Pack release
             run: |
-                mv platforms/macos/build/ReMCPE .
-                zip -r ReMCPE-macOS.zip ReMCPE
+                mv platforms/macos/build/NBCraft.app .
+                zip -r NBCraft-macOS.zip NBCraft.app
           - uses: alexellis/upload-assets@0.4.1
             env:
               GITHUB_TOKEN: ${{ github.token }}
             with:
-              asset_paths: '["ReMCPE-macOS.zip"]'
+              asset_paths: '["NBCraft-macOS.zip"]'
 
     ios:
         name: iOS
@@ -143,11 +146,11 @@ jobs:
           - name: Install Dependencies
             run: |
                 wget https://apt.llvm.org/llvm.sh
-                sudo bash llvm.sh 21
+                sudo bash llvm.sh 22
                 sudo apt-get update
                 sudo apt-get install --no-install-recommends -y \
                     cmake \
-                    clang-21 \
+                    clang-22 \
                     libplist-utils \
                     libplist-dev \
                     libssl-dev
@@ -155,23 +158,23 @@ jobs:
           - name: Build
             run: |
               ./platforms/ios/build.sh
-              mv platforms/ios/build/ReMCPE.ipa ReMCPE-iOS.ipa
+              mv platforms/ios/build/NBCraft.ipa NBCraft-iOS.ipa
             env:
-              CLANG: clang-21
-              AR: llvm-ar-21
-              RANLIB: llvm-ranlib-21
-              LLVM_CONFIG: llvm-config-21
+              CLANG: clang-22
+              AR: llvm-ar-22
+              RANLIB: llvm-ranlib-22
+              LLVM_CONFIG: llvm-config-22
           - uses: alexellis/upload-assets@0.4.1
             env:
               GITHUB_TOKEN: ${{ github.token }}
             with:
-              asset_paths: '["ReMCPE-iOS.ipa"]'
+              asset_paths: '["NBCraft-iOS.ipa"]'
 
     android:
         strategy:
             fail-fast: false
             matrix:
-                include: # TODO: switch to exclusively native android once it's fixed.
+                include:
                   # - name: Native
                   #   directory: platforms/android/project
                   - name: SDL 2
@@ -203,25 +206,25 @@ jobs:
             env:
               BUILD_TOOLS_VERSION: 36.1.0
           - name: Rename APK
-            run: mv ${{ steps.sign_apk.outputs.signedReleaseFile }} ReMCPE-Android.apk
+            run: mv ${{ steps.sign_apk.outputs.signedReleaseFile }} NBCraft-Android.apk
           - uses: alexellis/upload-assets@0.4.1
             env:
               GITHUB_TOKEN: ${{ github.token }}
             with:
-              asset_paths: '["ReMCPE.apk"]'
+              asset_paths: '["NBCraft.apk"]'
 
-    mingw:
+    windows:
         strategy:
             fail-fast: false
             matrix:
                 include:
-                  - name: Win32 (OGL)
-                    flags: '-DREMCPE_PLATFORM=windows -DREMCPE_GFX_API=OGL -DCMAKE_TOOLCHAIN_FILE=../cmake/mingw-w64-toolchain.cmake'
+                  - name: x86_64 (OGL)
                     arch: x86_64
-                  - name: Win32 (OGL) 32-bit
-                    flags: '-DREMCPE_PLATFORM=windows -DREMCPE_GFX_API=OGL -DCMAKE_TOOLCHAIN_FILE=../cmake/mingw-w64-toolchain-32bit.cmake'
-                    arch: x86
-        name: MinGW-w64 (${{ matrix.name }})
+                    gfx-api: OGL
+                  - name: i686 (OGL)
+                    arch: i686
+                    gfx-api: OGL
+        name: Windows (${{ matrix.name }})
         runs-on: ubuntu-24.04
         steps:
           - name: Checkout Repository
@@ -233,28 +236,26 @@ jobs:
                 sudo apt-get update
                 sudo apt-get install --no-install-recommends -y \
                     build-essential \
-                    cmake ninja-build \
-                    mingw-w64
+                    cmake \
+                    ccache \
+                    libgmp-dev \
+                    libmpfr-dev \
+                    libmpc-dev
           - name: Build
-            run: |
-                mkdir build
-                cd build
-                cmake .. -GNinja \
-                    -DCMAKE_BUILD_TYPE=Release \
-                    -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON \
-                    ${{ matrix.flags }}
-                cmake --build .
-                x86_64-w64-mingw32-strip reminecraftpe.exe
+            run: ./platforms/windows/build.sh
+            env:
+              ARCH: ${{ matrix.arch }}
+              NBC_GFX_API: ${{ matrix.gfx-api }}
+              NOSTRIP: 1
           - name: Pack release
             run: |
-                mkdir ReMCPE
-                mv game/assets build/reminecraftpe.exe ReMCPE
-                zip -r ReMCPE-Windows-${{ matrix.arch }}.zip ReMCPE
+                mv platforms/windows/build/NBCraft .
+                zip -r NBCraft-Windows-${{ matrix.arch }}.zip NBCraft
           - uses: alexellis/upload-assets@0.4.1
             env:
               GITHUB_TOKEN: ${{ github.token }}
             with:
-              asset_paths: '["ReMCPE-Windows-${{ matrix.arch }}.zip"]'
+              asset_paths: '["NBCraft-Windows-${{ matrix.arch }}.zip"]'
 
     switch:
         name: Nintendo Switch
@@ -274,14 +275,14 @@ jobs:
                     -DCMAKE_BUILD_TYPE=Release \
                     -DCMAKE_INTERPROCEDURAL_OPTIMIZATION=ON
                 /opt/devkitpro/portlibs/switch/bin/aarch64-none-elf-cmake --build .
-                mv platforms/sdl/sdl2/reminecraftpe.nro .
+                mv platforms/sdl/sdl2/nbcraft.nro .
           - name: Pack release
             run: |
-                mkdir ReMCPE
-                mv game/assets build/reminecraftpe.nro ReMCPE
-                zip -r ReMCPE-Switch.zip ReMCPE
+                mkdir NBCraft
+                mv game/assets build/nbcraft.nro NBCraft
+                zip -r NBCraft-Switch.zip NBCraft
           - uses: alexellis/upload-assets@0.4.1
             env:
               GITHUB_TOKEN: ${{ github.token }}
             with:
-              asset_paths: '["ReMCPE-Switch.zip"]'
+              asset_paths: '["NBCraft-Switch.zip"]'

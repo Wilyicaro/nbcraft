@@ -14,6 +14,8 @@ public:
 
 protected:
 	void _getXContentData(XCONTENT_DATA& out, LocalPlayerID playerId);
+	void _reloadXContentData(XCONTENT_DATA& out, LocalPlayerID playerId);
+	void _clearSaveDeviceId(LocalPlayerID playerId);
 	const XCONTENTDEVICEID& _getSaveDeviceId(LocalPlayerID playerId);
 
 public:
@@ -22,7 +24,6 @@ public:
 	int checkLicense() override;
 	int getScreenWidth() const override { return m_ScreenWidth; }
 	int getScreenHeight() const override { return m_ScreenHeight; }
-	std::string getDateString(int time) override;
 
 	// From v0.1.1. Also add these to determine touch screen use within the game.
 	bool isTouchscreen() const override;

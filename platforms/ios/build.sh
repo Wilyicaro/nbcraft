@@ -2,20 +2,21 @@
 # shellcheck disable=2086
 set -e
 
+# cd to the directory this script is in
 [ "${0%/*}" = "$0" ] && scriptroot="." || scriptroot="${0%/*}"
 cd "$scriptroot"
 
 # We could build for armv6, but we don't due to unplayable performance.
 targets='armv7-apple-ios3.1 arm64-apple-ios7.0'
 # Must be kept in sync with the cmake executable name
-bin='reminecraftpe'
+bin='nbcraft'
 
 platformdir=$PWD
-entitlements="$platformdir/minecraftpe.entitlements"
+entitlements="$platformdir/nbcraft.entitlements"
 
 workdir="$PWD/build/work"
 sdk="$workdir/sdks/ios-sdk"
-export REMCPE_SDK="$sdk"
+export NBC_SDK="$sdk"
 mkdir -p "$workdir/sdks"
 cd "$workdir"
 
@@ -58,7 +59,7 @@ for var in ar ranlib; do
     fi
 done
 
-for dep in "${CLANG:-clang}" make cmake; do
+for dep in "${CLANG:-clang}" make cmake cmp; do
     if ! command -v "$dep" >/dev/null; then
         printf '%s not found!\n' "$dep"
         exit 1
@@ -82,7 +83,7 @@ if [ "$(cat toolchain/toolchainver 2>/dev/null)" != "$toolchainver" ]; then
 fi
 
 # invalidate toolchain cache if settings change
-"$LLVM_CONFIG" --version > toolchainsettings
+"$LLVM_CONFIG" --version > toolchainsettings || true
 if ! cmp -s toolchainsettings toolchain/lasttoolchainsettings; then
     rm -rf toolchain
     outdated_toolchain=1
@@ -99,15 +100,15 @@ else
 fi
 # ensure we use ccache for the toolchain build
 ccache="$(command -v ccache || true)"
-printf '#!/bin/sh\nexec %s clang "$@"\n' "$ccache" > toolchain/bin/remcpe-clang
-printf '#!/bin/sh\nexec %s clang++ "$@"\n' "$ccache" > toolchain/bin/remcpe-clang++
-chmod +x toolchain/bin/remcpe-clang toolchain/bin/remcpe-clang++
+printf '#!/bin/sh\nexec %s clang "$@"\n' "$ccache" > toolchain/bin/nbc-clang
+printf '#!/bin/sh\nexec %s clang++ "$@"\n' "$ccache" > toolchain/bin/nbc-clang++
+chmod +x toolchain/bin/nbc-clang toolchain/bin/nbc-clang++
 
 if [ -n "$outdated_toolchain" ]; then
     # this step is needed even on macOS since newer versions of Xcode will straight up not let you link for old iOS versions anymore
     printf '\nBuilding toolchain...\n\n'
 
-    cctools_commit=12e2486bc81c3b2be975d3e117a9d3ab6ec3970c
+    cctools_commit=fee8115127bb849d7481ea0015f181d3ebbd33cf
     rm -rf cctools-port-*
     wget -O- "https://github.com/Un1q32/cctools-port/archive/$cctools_commit.tar.gz" | tar -xz
 
@@ -115,8 +116,8 @@ if [ -n "$outdated_toolchain" ]; then
     ./configure \
         --enable-silent-rules \
         --with-llvm-config="$LLVM_CONFIG" \
-        CC=remcpe-clang \
-        CXX=remcpe-clang++
+        CC=nbc-clang \
+        CXX=nbc-clang++
     make -C ld64 -j"$ncpus"
     strip ld64/src/ld/ld
     mv ld64/src/ld/ld ../../toolchain/bin/ld64.ld64
@@ -127,7 +128,7 @@ if [ -n "$outdated_toolchain" ]; then
     mv misc/strip ../../toolchain/bin/cctools-strip
     mv misc/lipo ../../toolchain/bin/lipo
     cd ../..
-    rm -rf "cctools-port-$cctools_commit"
+    rm -rf "cctools-port-$cctools_commit" &
 
     if [ "$(uname -s)" != "Darwin" ] && ! command -v ldid >/dev/null; then
         printf '\nBuilding ldid...\n\n'
@@ -137,19 +138,21 @@ if [ -n "$outdated_toolchain" ]; then
         wget -O- "https://github.com/ProcursusTeam/ldid/archive/$ldid_commit.tar.gz" | tar -xz
 
         cd "ldid-$ldid_commit"
-        make CXX=remcpe-clang++
+        make CXX=nbc-clang++
         strip ldid
         mv ldid ../toolchain/bin
         cd ..
-        rm -rf "ldid-$ldid_commit"
+        rm -rf "ldid-$ldid_commit" &
     fi
     printf '%s' "$toolchainver" > toolchain/toolchainver
+    outdated_toolchain=1
+    wait
 fi
 
 # checks if the linker we build successfully linked with LLVM and supports LTO,
 # and enables LTO in the cmake build if it does.
 if [ -z "$DEBUG" ]; then
-    if printf 'int main(void) {return 0;}' | REMCPE_TARGET=armv7-apple-ios3.1 "$platformdir/ios-cc" -xc - -flto -o "$workdir/testout" >/dev/null 2>&1; then
+    if printf 'int main(void) {return 0;}' | NBC_TARGET=armv7-apple-ios3.1 "$platformdir/ios-cc" -xc - -flto -o "$workdir/testout" >/dev/null 2>&1; then
         cflags='-flto'
     fi
     rm -f "$workdir/testout"
@@ -164,14 +167,16 @@ fi
 # Delete old build files if build settings change or if the SDK changes.
 printf '%s\n' "$DEBUG" > buildsettings
 clang -v >> buildsettings 2>&1
-if [ -n "$outdated_sdk" ] || ! cmp -s buildsettings lastbuildsettings; then
+if [ -n "$outdated_sdk" ] ||
+    [ -n "$outdated_toolchain" ] ||
+    ! cmp -s buildsettings lastbuildsettings; then
     rm -rf build-*
 fi
 mv buildsettings lastbuildsettings
 
 for target in $targets; do
     printf '\nBuilding for %s\n\n' "$target"
-    export REMCPE_TARGET="$target"
+    export NBC_TARGET="$target"
 
     mkdir -p "build-$target"
     cd "build-$target"
@@ -179,19 +184,18 @@ for target in $targets; do
     cmake "$platformdir/../.." \
         -DCMAKE_BUILD_TYPE="$build" \
         -DCMAKE_SYSTEM_NAME=Darwin \
-        -DREMCPE_PLATFORM=ios \
+        -DNBC_PLATFORM=ios \
         -DCMAKE_FIND_ROOT_PATH_MODE_PACKAGE=ONLY \
-        -DCMAKE_FIND_ROOT_PATH_MODE_LIBRARY=ONLY \
         -DCMAKE_FIND_ROOT_PATH_MODE_INCLUDE=ONLY \
         -DCMAKE_AR="$(command -v "$ar")" \
         -DCMAKE_RANLIB="$(command -v "$ranlib")" \
         -DCMAKE_C_COMPILER="$platformdir/ios-cc" \
         -DCMAKE_CXX_COMPILER="$platformdir/ios-c++" \
-        -DCMAKE_FIND_ROOT_PATH="$REMCPE_SDK/usr" \
+        -DCMAKE_FIND_ROOT_PATH="$NBC_SDK/usr" \
         -DCMAKE_C_FLAGS="$cflags" \
         -DCMAKE_CXX_FLAGS="$cflags" \
         -DWERROR="${WERROR:-OFF}"
-    make -j"$ncpus"
+    cmake --build . --parallel "$ncpus"
 
     cd ..
 done
@@ -204,4 +208,4 @@ else
     codesign -f -s - --entitlements "$entitlements" "$bin"
 fi
 
-[ -n "$REMCPE_NO_IPA" ] || "$workdir/../../build-ipa.sh" "$PWD/$bin"
+[ -n "$NBC_NO_IPA" ] || "$workdir/../../build-ipa.sh" "$PWD/$bin"

@@ -16,7 +16,7 @@ public:
 	{
 		m_count = 0;
 		m_capacity = 1024;
-		m_items = new Node*[m_capacity];
+		m_items = new Node * [m_capacity];
 	}
 
 	~BinaryHeap()
@@ -37,26 +37,26 @@ public:
 		if (m_count > 0)
 			downHeap(0);
 
-		pNode->field_0 = -1;
+		pNode->heapIdx = -1;
 		return pNode;
 	}
 
 	void clear() {
 		m_count = 0;
 	}
-	
+
 	int size() const {
 		return m_count;
 	}
 
 	void setDistance(Node* pNode, float distance) {
-		float oldDistance = pNode->field_C;
-		pNode->field_C = distance;
+		float oldDistance = pNode->f;
+		pNode->f = distance;
 
 		if (oldDistance >= distance)
-			downHeap(pNode->field_0);
+			downHeap(pNode->heapIdx);
 		else
-			inlined0(pNode->field_0);
+			inlined0(pNode->heapIdx);
 	}
 
 private:

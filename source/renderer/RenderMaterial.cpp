@@ -4,7 +4,7 @@
 
 #include "common/utility/JsonParser.hpp"
 
-#include "renderer/hal/enums/RenderState_JsonParser.hpp"
+#include "renderer/hal/enums/RenderStateType_JsonParser.hpp"
 #include "renderer/hal/enums/ComparisonFunc.hpp"
 #include "renderer/hal/enums/StencilOp.hpp"
 #include "renderer/hal/enums/ShaderStagesBits.hpp"
@@ -25,6 +25,8 @@ RenderMaterial::RenderMaterial()
 
 RenderMaterial::RenderMaterial(const rapidjson::Value::ConstObject& root, const RenderMaterial& parent)
 {
+    RenderContext& renderContext = RenderContextImmediate::get();
+
 	*this = parent;
     _parseRenderStates(root);
     _parseRuntimeStates(root);
@@ -34,22 +36,22 @@ RenderMaterial::RenderMaterial(const rapidjson::Value::ConstObject& root, const 
     {
         _parseDefines(root);
 #ifdef FEATURE_GFX_SHADERS
-        _loadShader(*ShaderGroup::singleton());
+        _loadShader(renderContext, *ShaderGroup::singleton());
 #endif
     }
 
     _applyRenderStates();
 
-    RenderContext& renderContext = RenderContextImmediate::get();
     m_blendState.createBlendState(renderContext, m_blendStateDescription);
     m_depthStencilState.createDepthState(renderContext, m_depthStencilStateDescription);
     m_rasterizerState.createRasterizerStateDescription(renderContext, m_rasterizerStateDescription);
-    m_fixedPipelineState.createFixedPipelineState(renderContext, m_fixedPipelineStateDescription);
+    m_renderState.createRenderState(renderContext, m_renderStateDescription);
+    m_alphaState.createAlphaState(renderContext, m_alphaStateDescription);
 }
 
-RenderState RenderMaterial::_parseStateName(const std::string& stateName) const
+RenderStateType RenderMaterial::_parseStateName(const std::string& stateName) const
 {
-    return ((std::map<std::string, RenderState>)_renderStateMap)[stateName];
+    return ((std::map<std::string, RenderStateType>)_renderStateTypeMap)[stateName];
 }
 
 void RenderMaterial::_parseRenderStates(const rapidjson::Value& root)
@@ -61,7 +63,7 @@ void RenderMaterial::_parseRenderStates(const rapidjson::Value& root)
     for (rapidjson::Value::ConstValueIterator it = statesValue.Begin(); it != statesValue.End(); it++)
     {
         std::string stateName = it->GetString();
-        RenderState state = _parseStateName(stateName);
+        RenderStateType state = _parseStateName(stateName);
         addState(state);
     }
 }
@@ -70,7 +72,7 @@ void RenderMaterial::_parseRuntimeStates(const rapidjson::Value& root)
 {
     _parseDepthStencilState(root);
     _parseBlendState(root);
-    _parseFixedPipelineState(root);
+    _parseAlphaState(root);
 
     if (root.HasMember("polygonOffsetLevel"))
     {
@@ -129,15 +131,15 @@ void RenderMaterial::_parseBlendState(const rapidjson::Value& root)
     parse(root, "blendDst", m_blendStateDescription.blendDestination);
 }
 
-void RenderMaterial::_parseFixedPipelineState(const rapidjson::Value& root)
+void RenderMaterial::_parseAlphaState(const rapidjson::Value& root)
 {
-    parse(root, "alphaFunc", m_fixedPipelineStateDescription.alphaFunc);
+    parse(root, "alphaFunc", m_alphaStateDescription.alphaFunc);
 
     if (root.HasMember("alphaRef"))
     {
         const rapidjson::Value& alphaRefValue = root["alphaRef"];
         if (!alphaRefValue.IsNull())
-            m_fixedPipelineStateDescription.alphaRef = alphaRefValue.GetFloat();
+            m_alphaStateDescription.alphaRef = alphaRefValue.GetFloat();
     }
 }
 
@@ -178,7 +180,7 @@ void RenderMaterial::_parseShaderPaths(const rapidjson::Value& root)
 
 #ifdef FEATURE_GFX_SHADERS
 
-std::string RenderMaterial::_buildHeader()
+std::string RenderMaterial::_buildHeader(RenderContext& context)
 {
     std::ostringstream stream;
 
@@ -187,18 +189,18 @@ std::string RenderMaterial::_buildHeader()
         stream << "#define " + *it + "\n";
     }
 
-    Shader::BuildHeader(stream);
+    ShaderProgram::BuildHeader(context, stream);
 
     return stream.str();
 }
 
-void RenderMaterial::_loadShader(ShaderGroup& shaderGroup)
+void RenderMaterial::_loadShader(RenderContext& context, ShaderGroup& shaderGroup)
 {
-    Shader::SpliceShaderPathAndExtension(m_vertexShader);
-    Shader::SpliceShaderPathAndExtension(m_fragmentShader);
-    Shader::SpliceShaderPathAndExtension(m_geometryShader);
+    ShaderProgram::SpliceShaderPathAndExtension(m_vertexShader);
+    ShaderProgram::SpliceShaderPathAndExtension(m_fragmentShader);
+    ShaderProgram::SpliceShaderPathAndExtension(m_geometryShader);
 
-    std::string header = _buildHeader();
+    std::string header = _buildHeader(context);
     m_pShader = &shaderGroup.loadShader(header, m_vertexShader, m_fragmentShader, m_geometryShader);
 }
 
@@ -225,8 +227,8 @@ void RenderMaterial::_applyRenderStates()
     m_depthStencilStateDescription.depthWriteMask = hasState(RS_DISABLE_DEPTH_WRITE) ? DEPTH_WRITE_MASK_NONE : DEPTH_WRITE_MASK_ALL;
     m_depthStencilStateDescription.stencilTestEnabled = hasState(RS_ENABLE_STENCIL_TEST);
     m_blendStateDescription.enableBlend = hasState(RS_BLENDING);
-    m_fixedPipelineStateDescription.enableAlphaTest = hasState(RS_ENABLE_ALPHA_TEST);
-    m_fixedPipelineStateDescription.enableTexture = hasState(RS_ENABLE_TEXTURE);
+    m_renderStateDescription.enableTexture = hasState(RS_ENABLE_TEXTURE);
+    m_alphaStateDescription.enableAlphaTest = hasState(RS_ENABLE_ALPHA_TEST);
 
     float polygonOffsetLevel = 0.0f;
     if (hasState(RS_POLYGON_OFFSET))
@@ -269,7 +271,10 @@ void RenderMaterial::useWith(RenderContext& context, const VertexFormat& vertexF
     m_pShader->bindShader(context, vertexFormat, basePtr, SHADER_STAGE_BITS_ALL);
 #endif
 #if !defined(FEATURE_GFX_SHADERS) || MCE_GFX_FF_ALPHATEST
-    m_fixedPipelineState.bindFixedPipelineState(context);
+    m_renderState.bindRenderState(context);
+#endif
+#if !defined(FEATURE_GFX_SHADERS) || MCE_GFX_FF_ALPHATEST
+    m_alphaState.bindAlphaState(context);
 #endif
 }
 
@@ -281,7 +286,7 @@ void RenderMaterial::compileShader()
     m_pShader->compileAndLinkShader();
 }
 
-void RenderMaterial::addState(RenderState state)
+void RenderMaterial::addState(RenderStateType state)
 {
     m_stateMask |= 1 << (state & 0x1F);
 }

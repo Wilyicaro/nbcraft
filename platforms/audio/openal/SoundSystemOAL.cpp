@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdexcept>
 
 #include "CustomSoundSystem.hpp"
 
@@ -293,13 +294,17 @@ void SoundSystemOAL::playAt(const SoundDesc& sound, const Vec3& pos, float volum
 	// Only set constant parameters if source isn't reused
 	if (isNew)
 	{
+		// Not set by Paulscode
+		/*alSourcef(al_source, AL_MAX_DISTANCE, SOUND_MAX_DISTANCE);
+		AL_ERROR_CHECK();*/
+
 		// Set Attenuation
-		alSourcef(al_source, AL_MAX_DISTANCE, SOUND_MAX_DISTANCE);
+		alSourcef(al_source, AL_ROLLOFF_FACTOR, SOUND_ROLLOFF_FACTOR);
 		AL_ERROR_CHECK();
-		alSourcef(al_source, AL_ROLLOFF_FACTOR, 0.9f); // 0.9f is audibly on-par with b1.2_02's rolloff factor. So you probably shouldn't change it. 0.03f is default value for Paulscode.
-		AL_ERROR_CHECK();
-		alSourcef(al_source, AL_REFERENCE_DISTANCE, 5.0f); // Sounds the same regardless of being set. Paulscode doesn't set this.
-		AL_ERROR_CHECK();
+
+		// Sounds the same regardless of being set. Paulscode doesn't set this.
+		/*alSourcef(al_source, AL_REFERENCE_DISTANCE, 1.0f);
+		AL_ERROR_CHECK();*/
 
 		alSource3f(al_source, AL_VELOCITY, 0.0f, 0.0f, 0.0f);
 		AL_ERROR_CHECK();
@@ -401,7 +406,15 @@ void SoundSystemOAL::startEngine()
 	alListenerfv(AL_VELOCITY, velocity);
 	AL_ERROR_CHECK();*/
 
-	m_musicStream = new SoundStreamOAL();
+	try
+	{
+		m_musicStream = new SoundStreamOAL();
+	}
+	catch (const std::runtime_error&)
+	{
+		LOG_E("Failed to init audio");
+		return;
+	}
     
 	// Mark As loaded
 	m_bInitialized = true;

@@ -34,10 +34,17 @@ TextureData* Textures::loadTexture(const std::string& name, bool bIsRequired)
 			uint32_t* placeholder = (uint32_t *)malloc(sizeof(uint32_t) * 4);
 			if (!placeholder)
 				throw std::bad_alloc();
+#if MC_ENDIANNESS_BIG
+			placeholder[0] = 0xf800f8ff;
+			placeholder[1] = 0x000000ff;
+			placeholder[3] = 0xf800f8ff;
+			placeholder[2] = 0x000000ff;
+#else // MC_ENDIANNESS_LITTLE
 			placeholder[0] = 0xfff800f8;
 			placeholder[1] = 0xff000000;
 			placeholder[3] = 0xfff800f8;
 			placeholder[2] = 0xff000000;
+#endif
 			t.m_imageData.m_data = (uint8_t*)placeholder;
 		}
 		else
@@ -164,7 +171,10 @@ Textures::Textures() :
 	addSprite("gui/console/Graphics/Armour_Slot_Legs.png", m_guiAtlas);
 	addSprite("gui/console/Graphics/Armour_Slot_Feet.png", m_guiAtlas);
 	addSprite("gui/console/Graphics/Arrow_Off.png", m_guiAtlas);
+	addSprite("gui/console/Graphics/Arrow_On.png", m_guiAtlas);
 	addSprite("gui/console/Graphics/Arrow_Small_Off.png", m_guiAtlas);
+	addSprite("gui/console/Graphics/Flame_Off.png", m_guiAtlas);
+	addSprite("gui/console/Graphics/Flame_On.png", m_guiAtlas);
 	addSprite("gui/console/Graphics/MainMenuButton_Norm.png", m_filteredGuiAtlas);
 	addSprite("gui/console/Graphics/MainMenuButton_Over.png", m_filteredGuiAtlas);
 	addSprite("gui/console/Graphics/ListButton_Norm.png", m_filteredGuiAtlas);

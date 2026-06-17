@@ -42,7 +42,7 @@ public:
 	virtual bool canHurtPlayer();
 	virtual void interact(Player*, Entity*);
 	virtual void attack(Player*, Entity*);
-	virtual ItemStack handleInventoryMouseClick(int, int, MouseButtonType, bool, Player*);
+	virtual ItemStack handleInventoryMouseClick(int containerId, Container::SlotID slotId, MouseButtonType, bool, Player*);
 	virtual void handleCloseInventory(int, Player*);
 	virtual bool isCreativeType() const { return true; }
 	virtual bool isSurvivalType() const { return false; }
@@ -50,5 +50,5 @@ public:
 
 public:
 	Minecraft* m_pMinecraft;
-	uint8_t field_8;
+	uint8_t m_bInstaBuild;
 };

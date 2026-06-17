@@ -14,6 +14,8 @@
 
 constexpr char COLOR_START_CHAR = '\xa7';
 
+static constexpr float RENDER_XY_SIZE = 8.0f;
+
 Font::Materials::Materials()
 {
 	MATERIAL_PTR(common, ui_text);
@@ -75,7 +77,7 @@ void Font::buildChar(unsigned char chr, float x, float y)
 
 	constexpr float D128 = (1.0f / 128.0f);
 
-#define CO (7.99f)
+#define CO (RENDER_XY_SIZE-0.01f)
 
 	t.vertexUV(x,      y + CO, 0.0f,  u       * D128, (v + CO) * D128);
 	t.vertexUV(x + CO, y + CO, 0.0f, (u + CO) * D128, (v + CO) * D128);
@@ -137,7 +139,8 @@ void Font::drawOutlinedString(const std::string& str, int x, int y, const Color&
 		for (int yi = 0; yi < 3; ++yi)
 		{
 			int t1 = translations[yi];
-			if (t != 0 || t1 != 0) {
+			if (t != 0 || t1 != 0)
+			{
 				MatrixStack::Ref matrix = MatrixStack::World.push();
 				matrix->translate(Vec3(t, t1, 0));
 				drawScalable(str, x, y, outlineColor, scale, false);
@@ -192,7 +195,7 @@ void Font::drawSlow(const std::string& str, int x, int y, const Color& color, bo
 #endif
 
 	MatrixStack::Ref mtx = MatrixStack::World.push();
-	mtx->translate(Vec3(x, y, 0.0f));
+	mtx->translate(Vec3(x, y, 0));
 
 	Tesselator& t = Tesselator::instance;
 	t.begin(4 * str.size());
@@ -205,7 +208,7 @@ void Font::drawSlow(const std::string& str, int x, int y, const Color& color, bo
 	{
 		if (str[i] == '\n')
 		{
-			cYPos += 12.0f;
+			cYPos += RENDER_XY_SIZE + 2.0f;
 			cXPos = 0;
 			continue;
 		}
@@ -289,7 +292,8 @@ std::vector<std::string> Font::split(const std::string& text, int maxWidth)
 		std::istringstream iss(paragraph);
 		std::string word;
 
-		while (iss >> word) {
+		while (iss >> word)
+		{
 			std::string testLine = currentLine.empty() ? word : currentLine + " " + word;
 
 			if (width(testLine) <= maxWidth)

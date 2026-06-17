@@ -18,7 +18,9 @@
 #include "compat/LegacyCPP.hpp"
 #include "AppPlatformListener.hpp"
 
-AppPlatform* AppPlatform::m_singleton = nullptr;
+// NOTE: don't initialize this with `nullptr`, because some compilers think ` = nullptr;` is a
+// static initialization rather than just setting to null/0.
+AppPlatform* AppPlatform::m_singleton = NULL;
 
 AppPlatform* AppPlatform::singleton()
 {
@@ -318,6 +320,15 @@ std::string AppPlatform::getAssetPath(const std::string& path) const
 std::string AppPlatform::getExternalStoragePath(const std::string& path) const
 {
 	return m_externalStorageDir + C_HOME_PATH + path;
+}
+
+void AppPlatform::setVSyncEnabled(bool enabled)
+{
+}
+
+bool AppPlatform::isVSyncSwitchable() const
+{
+    return false;
 }
 
 bool AppPlatform::hasAssetFile(const std::string& path) const

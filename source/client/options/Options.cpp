@@ -30,22 +30,22 @@
 #include "client/gui/components/TickBox.hpp"
 #include "client/renderer/LogoRenderer.hpp"
 
+#include "renderer/RenderContextImmediate.hpp"
+
 
 void Options::_initDefaultValues()
 {
-	field_244 = 1.0f;
+	m_flySpeed = 1.0f;
 	field_248 = 1.0f;
-	field_23E = 0;
-	field_241 = false;
-	field_24C = 0;
-	field_16  = 0;
-	field_240 = 1;
-	field_1C = "Default";
-	field_19 = 1;
+	m_bFixedCamera = false;
+	m_bLimitFramerate = false;
+	field_240 = true;
+	m_skin = "Default";
+	m_bUseMouseForDigging = true;
 #ifdef ORIGINAL_CODE
 	m_viewDistance.set(2);
 	m_thirdPerson.set(0);
-	field_19 = 0;
+	m_bUseMouseToBreak = false;
 #endif
 
 	// Force this on until we get a proper UI
@@ -78,6 +78,10 @@ Options::Options(Minecraft* mc, const std::string& folderPath) :
 	, m_hideGui("gfx_hidegui", "options.hideGui", false)
 	, m_thirdPerson("gfx_thirdperson", "options.thirdPerson", false)
 	, m_flightHax("misc_flycheat", "options.flightHax", false)
+	, m_swapJumpSneak("ctrl_swapjumpsneak", "options.swapJumpSneak", false)
+	, m_dpadSize("ctrl_dpadsize", "options.dpadSize", 1.0f)
+	, m_guiScale("gfx_guiscale", "options.guiScale", 0, ValuesBuilder().add("options.guiScale.auto").add("options.guiScale.small").add("options.guiScale.normal").add(("options.guiScale.large")))
+	, m_gamma("gfx_gamma", "options.gamma", 0.50f)
 	, m_playerName("mp_username", "options.username", "Steve")
 	, m_serverVisibleDefault("mp_server_visible_default", "options.serverVisibleDefault", true)
 	, m_autoJump("ctrl_autojump", "options.autoJump", mc->platform()->isTouchscreen())
@@ -88,7 +92,6 @@ Options::Options(Minecraft* mc, const std::string& folderPath) :
 	, m_splitControls("ctrl_split", "options.splitControls", false)
 	, m_dynamicHand("gfx_dynamichand", "options.dynamicHand", false)
 	, m_menuPanorama("misc_menupano", "options.menuPanorama", true)
-	, m_guiScale("gfx_guiscale", "options.guiScale", 0, ValuesBuilder().add("options.guiScale.auto").add("options.guiScale.small").add("options.guiScale.normal").add(("options.guiScale.large")))
 	, m_lang("gfx_lang", "options.lang", "en_us")
 	, m_uiTheme("gfx_uitheme", "options.uiTheme", GetDefaultUiTheme(m_pMinecraft), ValuesBuilder().add("options.uiTheme.pocket").add("options.uiTheme.java").add("options.uiTheme.console"))
 	, m_logoType("gfx_logotype", "options.logoType", LOGO_AUTO, ValuesBuilder().add("options.logoType.auto").add("options.logoType.pocket").add("options.logoType.java").add("options.logoType.console").add("options.logoType.xbox360").add("options.logoType.logo3d"))
@@ -97,13 +100,15 @@ Options::Options(Minecraft* mc, const std::string& folderPath) :
 	//, m_limitFramerate("gfx_fpslimit", "options.framerateLimit", 0, ValuesBuilder().add(performance.max").add("performance.balanced").add("performance.powersaver"))
 	//, m_bMipmaps("gfx_mipmaps", "options.mipmaps")
 	//, m_moreWorldOptions("misc_moreworldoptions", "options.moreWorldOptions", true)
-	//, m_vSync("enableVsync", "options.enableVsync")
+	, m_vSync("enableVsync", "options.enableVsync", true)
 {
 	add(m_musicVolume);
 	add(m_masterVolume);
 	add(m_invertMouse);
 	add(m_difficulty);
 	add(m_splitControls);
+	add(m_swapJumpSneak);
+	add(m_dpadSize);
 	add(m_sensitivity);
 	add(m_viewDistance);
 	add(m_viewBobbing);
@@ -113,6 +118,7 @@ Options::Options(Minecraft* mc, const std::string& folderPath) :
 	add(m_biomeColors);
 	add(m_ambientOcclusion);
 	add(m_guiScale);
+	add(m_gamma);
 	//add(m_limitFramerate);
 	add(m_autoJump);
 	//add(m_bMipmaps);
@@ -125,10 +131,12 @@ Options::Options(Minecraft* mc, const std::string& folderPath) :
 	add(m_playerName);
 	add(m_debugText);
 	add(m_lang);
+	add(m_bUseController);
+	add(m_hudSize);
 	add(m_uiTheme);
 	add(m_logoType);
-	add(m_hudSize);
 	add(m_classicCrafting);
+	add(m_vSync);
 	_initDefaultValues();
 	if (folderPath.empty()) return;
 	m_filePath = folderPath + "/options.txt";
@@ -274,16 +282,12 @@ std::string Options::saveBool(bool b)
 
 std::string Options::saveInt(int i)
 {
-	std::stringstream ss;
-	ss << i;
-	return ss.str();
+	return Util::toString(i);
 }
 
 std::string Options::saveFloat(float f)
 {
-	std::stringstream ss;
-	ss << f;
-	return ss.str();
+	return Util::toString(f);
 }
 
 std::string Options::saveArray(const std::vector<std::string>& arr)
@@ -386,7 +390,7 @@ void Options::savePropertiesToFile(const std::string& filePath, const std::vecto
 		return;
 	}
 
-	os << "#Config file for Minecraft PE.  The # at the start denotes a comment, removing it makes it a command.\n\n";
+	os << "#Config file for " C_GAME_NAME ".  The # at the start denotes a comment, removing it makes it a command.\n\n";
 
 	for (size_t i = 0; i < properties.size(); i += 2)
 		os << properties[i] << ':' << properties[i + 1] << '\n';
@@ -423,7 +427,8 @@ void Options::loadControls()
 	BM(BM_BACKWARD,     "key.back",          'S');
 	BM(BM_RIGHT,        "key.right",         'D');
 	BM(BM_JUMP,         "key.jump",          ' ');
-	BM(BM_INVENTORY,    "key.inventory",     'E');
+	BM(BM_CRAFTING,     "key.crafting",      'E');
+	BM(BM_INVENTORY,    "key.inventory",     'I');
 	BM(BM_DROP,         "key.drop",          'Q');
 	BM(BM_CHAT,         "key.chat",          'T');
 	BM(BM_FOG,          "key.fog",           'F');
@@ -485,7 +490,8 @@ void Options::loadControls()
 	BM(BM_DROP,          SDLVK_q);
 	BM(BM_CHAT,          SDLVK_t);
 	BM(BM_FOG,           SDLVK_f);
-	BM(BM_INVENTORY,     SDLVK_e);
+	BM(BM_CRAFTING,      SDLVK_e);
+	BM(BM_INVENTORY,     SDLVK_i);
 	BM(BM_SNEAK,         SDLVK_LSHIFT);
 	BM(BM_SLOT_1,        SDLVK_1);
 	BM(BM_SLOT_2,        SDLVK_2);
@@ -646,6 +652,9 @@ void Options::initResourceDependentOptions()
 
 	if (!Screen::isMenuPanoramaAvailable())
 		m_menuPanorama.set(false);
+
+	if (!m_pMinecraft->platform()->isVSyncSwitchable())
+		m_vSync.set(true);
 }
 
 const std::string& OptionEntry::getDisplayName() const
@@ -670,18 +679,6 @@ void OptionEntry::addGuiElement(std::vector<GuiElement*>& elements, UITheme uiTh
 	elements.push_back(new SmallButton(0, 0, this, getMessage()));
 }
 
-void AOOption::apply()
-{
-	Minecraft::useAmbientOcclusion = get();
-	if (m_pMinecraft->m_pLevelRenderer)
-		m_pMinecraft->m_pLevelRenderer->allChanged();
-}
-
-void GuiScaleOption::apply()
-{
-	m_pMinecraft->sizeUpdate(Minecraft::width, Minecraft::height);
-}
-
 void FloatOption::load(const std::string& value)
 {
 	set(Options::readFloat(value));
@@ -689,12 +686,17 @@ void FloatOption::load(const std::string& value)
 
 std::string FloatOption::getDisplayValue() const
 {
-	return get() == 0.0f ? Language::get("options.off") : Options::saveInt(get() * 100) + "%";
+	return get() == 0.0f ? Language::get("options.off") : Util::toString(int(get() * 100)) + "%";
 }
 
 void FloatOption::addGuiElement(std::vector<GuiElement*>& elements, UITheme uiTheme)
 {
 	elements.push_back(new SliderButton(0, 0, 200, uiTheme == UI_CONSOLE ? 32 : 20, this, getMessage(), toFloat()));
+}
+
+void IntOption::load(const std::string& value)
+{
+	set(Options::readInt(value));
 }
 
 void BoolOption::load(const std::string& value)
@@ -733,6 +735,47 @@ void MinMaxOption::addGuiElement(std::vector<GuiElement*>& elements, UITheme uiT
 		elements.push_back(new SwitchValuesButton(0, 0, this, getDisplayName()));
 }
 
+std::string SensitivityOption::getDisplayValue() const
+{
+	return get() == 0.0f ? Language::get("options.sensitivity.min") : get() == 1.0f ? Language::get("options.sensitivity.max") : Util::toString(int(get() * 200)) + "%";
+}
+
+void ControllerOption::apply()
+{
+	// @TODO: This works but ultimately needs to be a multi-select (KBM, controller, touch) instead of a single option.
+	// Either that or figure out an automatic way to switch between them based on input like how Minecraft Bedrock does
+	// For now, I just wanted to be able to switch to controller input on mobile devices.
+	if (m_pMinecraft && m_pMinecraft->m_pInputHolder)
+		m_pMinecraft->reloadInput();
+}
+
+void AOOption::apply()
+{
+	Minecraft::useAmbientOcclusion = get();
+	if (m_pMinecraft->m_pLevelRenderer)
+		m_pMinecraft->m_pLevelRenderer->allChanged();
+}
+
+void GuiScaleOption::apply()
+{
+	m_pMinecraft->sizeUpdate(Minecraft::width, Minecraft::height);
+}
+
+void GammaOption::apply()
+{
+	// Budget rounding since the 360 just doesn't have a round function
+	// @TODO: Then again, we don't need this level or precision to begin with
+	// I just don't wanna have to rework the SliderButton to support integers
+	if (!m_pMinecraft->m_pGameRenderer)
+		return;
+	m_pMinecraft->m_pGameRenderer->setGamma((float)Mth::floor(get() * 100) / 100);
+}
+
+std::string GammaOption::getDisplayValue() const
+{
+	return Util::toString(int(get() * 100)) + "%";
+}
+
 void GraphicsOption::apply()
 {
 	if (m_pMinecraft->m_pLevelRenderer)
@@ -744,14 +787,9 @@ std::string FancyGraphicsOption::getMessage() const
 	return Util::format(Language::get("options.value").c_str(), Language::get("options.graphics").c_str(), Language::get(get() ? "options.graphics.fancy" : "options.graphics.fast").c_str());
 }
 
-std::string SensitivityOption::getDisplayValue() const
+void VsyncOption::apply()
 {
-	return get() == 0.0f ? Language::get("options.sensitivity.min") : get() == 1.0f ? Language::get("options.sensitivity.max") : Options::saveInt(get() * 200) + "%";
-}
-
-void IntOption::load(const std::string& value)
-{
-	set(Options::readInt(value));
+	m_pMinecraft->platform()->setVSyncEnabled(get());
 }
 
 void LogoTypeOption::apply()
@@ -763,9 +801,23 @@ void LogoTypeOption::apply()
 	}
 }
 
+void SwapJumpSneakOption::apply()
+{
+	if (!m_pMinecraft || !m_pMinecraft->m_pInputHolder)
+		return;
+	m_pMinecraft->m_pInputHolder->setScreenSize(Minecraft::width, Minecraft::height);
+}
+
+void DpadSizeOption::apply()
+{
+	if (!m_pMinecraft || !m_pMinecraft->m_pInputHolder)
+		return;
+	m_pMinecraft->m_pInputHolder->setScreenSize(Minecraft::width, Minecraft::height);
+}
+
 std::string HUDSizeOption::getDisplayValue() const
 {
-	return Options::saveInt(get() - 1);
+	return Util::toString(get() - 1);
 }
 
 void UIThemeOption::apply()
