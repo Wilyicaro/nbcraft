@@ -90,7 +90,6 @@ Options::Options(Minecraft* mc, const std::string& folderPath) :
 	, m_fancyGrass("gfx_fancygrass", "options.fancyGrass", true)
 	, m_biomeColors("gfx_biomecolors", "options.biomeColors", true)
 	, m_splitControls("ctrl_split", "options.splitControls", false)
-	, m_bUseController("ctrl_usecontroller", "options.useController", false)
 	, m_dynamicHand("gfx_dynamichand", "options.dynamicHand", false)
 	, m_menuPanorama("misc_menupano", "options.menuPanorama", true)
 	, m_lang("gfx_lang", "options.lang", "en_us")
@@ -132,7 +131,6 @@ Options::Options(Minecraft* mc, const std::string& folderPath) :
 	add(m_playerName);
 	add(m_debugText);
 	add(m_lang);
-	add(m_bUseController);
 	add(m_hudSize);
 	add(m_uiTheme);
 	add(m_logoType);
@@ -741,15 +739,6 @@ void MinMaxOption::addGuiElement(std::vector<GuiElement*>& elements, UITheme uiT
 std::string SensitivityOption::getDisplayValue() const
 {
 	return get() == 0.0f ? Language::get("options.sensitivity.min") : get() == 1.0f ? Language::get("options.sensitivity.max") : Util::toString(int(get() * 200)) + "%";
-}
-
-void ControllerOption::apply()
-{
-	// @TODO: This works but ultimately needs to be a multi-select (KBM, controller, touch) instead of a single option.
-	// Either that or figure out an automatic way to switch between them based on input like how Minecraft Bedrock does
-	// For now, I just wanted to be able to switch to controller input on mobile devices.
-	if (m_pMinecraft && m_pMinecraft->m_pInputHolder)
-		m_pMinecraft->reloadInput();
 }
 
 void AOOption::apply()

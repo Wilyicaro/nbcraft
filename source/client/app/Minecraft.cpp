@@ -393,7 +393,7 @@ bool Minecraft::isTouchscreen() const
 
 bool Minecraft::useTouchscreen() const
 {
-	return isTouchscreen() && !getOptions()->m_bUseController.get();
+	return isTouchscreen(); // && !getOptions()->m_bUseController.get()
 }
 
 bool Minecraft::useSplitControls() const

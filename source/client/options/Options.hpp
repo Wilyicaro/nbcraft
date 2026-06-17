@@ -299,14 +299,6 @@ public:
 	std::string getDisplayValue() const override;
 };
 
-class ControllerOption : public BoolOption
-{
-public:
-	ControllerOption(const std::string& key, const std::string& name, bool initial = true) : BoolOption(key, name, initial) {}
-
-	void apply() override;
-};
-
 class AOOption : public BoolOption
 {
 public:
@@ -499,7 +491,6 @@ public:
 	GraphicsOption m_fancyGrass;
 	GraphicsOption m_biomeColors;
 	BoolOption m_splitControls;
-	ControllerOption m_bUseController;
 	BoolOption m_dynamicHand;
 	BoolOption m_menuPanorama;
 	StringOption m_lang;
@@ -531,7 +522,6 @@ public:
 	OPTION(m_swapJumpSneak); idxSwapJumpSneak = currentIndex; \
 	OPTION(m_dpadSize); idxDpadSize = currentIndex; \
 	OPTION(m_autoJump);                    \
-	OPTION(m_bUseController); idxController = currentIndex; \
 
 #define OPTIONS_LIST_CONTROLS_FEEDBACK     \
 	/*HEADER("Feedback");*/                \
