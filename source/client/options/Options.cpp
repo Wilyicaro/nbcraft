@@ -438,11 +438,11 @@ void Options::loadControls()
 	BM(AID_MENU_DOWN,    "key.menu.down",     0x28); // VK_DOWN
 	BM(AID_MENU_LEFT,    "key.menu.left",     0x25); // VK_LEFT
 	BM(AID_MENU_RIGHT,   "key.menu.right",    0x27); // VK_RIGHT
-	BM(AID_MENU_TAB_LEFT,"key.menu.tab.left", 0x25);	// VK_LEFT
-	BM(AID_MENU_TAB_RIGHT, "key.menu.tab.right", 0x27);// VK_RIGHT
+	BM(AID_MENU_TAB_LEFT,  "key.menu.tab.left",  0x25);	// VK_LEFT
+	BM(AID_MENU_TAB_RIGHT, "key.menu.tab.right", 0x27); // VK_RIGHT
 	BM(AID_MENU_OK,      "key.menu.ok",       0x0D); // VK_RETURN
 	BM(AID_MENU_CANCEL,  "key.menu.cancel",   0x1B); // VK_ESCAPE, was 0x08 = VK_BACK
-	BM(AID_MENU_PAUSE,	"key.menu.pause",	 0x1B); // VK_ESCAPE
+	BM(AID_MENU_PAUSE,	 "key.menu.pause",	  0x1B); // VK_ESCAPE
 	BM(AID_SLOT_1,       "key.slot.1",        '1');
 	BM(AID_SLOT_2,       "key.slot.2",        '2');
 	BM(AID_SLOT_3,       "key.slot.3",        '3');
