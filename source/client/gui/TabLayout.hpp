@@ -19,7 +19,8 @@ public:
     void clear();
 
     void startNavigation();
-    void areaNavigation(AreaNavigation::Direction);
+    bool areaNavigation(Minecraft* pMinecraft, AreaNavigation::Direction) override;
+    void areaNavigation(AreaNavigation::Direction, bool cyclic = true);
     void setSelected(bool);
 
     bool isHovered(Minecraft*, const MenuPointer& pointer) override;

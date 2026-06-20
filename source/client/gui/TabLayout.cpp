@@ -128,14 +128,19 @@ void TabLayout::startNavigation()
 		selectElementById(id, false);
 }
 
-void TabLayout::areaNavigation(AreaNavigation::Direction dir)
+bool TabLayout::areaNavigation(Minecraft* pMinecraft, AreaNavigation::Direction)
+{
+	return false;
+}
+
+void TabLayout::areaNavigation(AreaNavigation::Direction dir, bool cyclic)
 {
 	GuiElement* element = m_pSelectedElement;
 
 	if (!element) return;
 
 	AreaNavigation::ID id;
-	if (m_bCyclic)
+	if (m_bCyclic && cyclic)
 		id = Navigation(this).navigateCyclic(dir, element->m_xPos + element->m_width / 2, element->m_yPos + element->m_height / 2);
 	else
 		id = Navigation(this).navigate(dir, element->m_xPos + element->m_width / 2, element->m_yPos + element->m_height / 2);
