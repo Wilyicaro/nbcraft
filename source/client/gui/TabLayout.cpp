@@ -26,30 +26,27 @@ GuiElement* TabLayout::getElement(ID index) const
 bool TabLayout::selectElementById(ID id, bool sound)
 {
 	GuiElement* element = getElement(id);
-	if (element)
-	{
-		selectElement(element);
-		if (sound)
-			m_pScreen->_playSelectSound();
-		return true;
-	}
-	return false;
+	if (!element) return false;
+
+	selectElement(element);
+	if (sound)
+		m_pScreen->_playSelectSound();
+
+	return true;
 }
 
 bool TabLayout::selectElement(GuiElement* element)
 {
-	if (element != m_pSelectedElement)
-	{
-		if (m_pSelectedElement)
-			m_pSelectedElement->setSelected(false);
-		m_pSelectedElement = element;
-		if (m_pSelectedElement)
-			m_pSelectedElement->setSelected(true);
-		onSelectElement(element);
-		return true;
-	}
+	if (element == m_pSelectedElement) return false;
 
-	return false;
+	if (m_pSelectedElement)
+		m_pSelectedElement->setSelected(false);
+	m_pSelectedElement = element;
+	if (m_pSelectedElement)
+		m_pSelectedElement->setSelected(true);
+	onSelectElement(element);
+
+	return true;
 }
 
 GuiElement::ID TabLayout::getIndex() const

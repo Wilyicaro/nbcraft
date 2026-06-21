@@ -85,7 +85,7 @@ void CreativeScreen_Console::_renderBg(float partialTicks)
 
 SlotDisplay CreativeScreen_Console::_createSlotDisplay(const Slot& slot)
 {
-    const int slotSize = 54;
+    constexpr int slotSize = 54;
     if (slot.m_group == Slot::HOTBAR)
     {
         return SlotDisplay(83 + slot.m_stackId * slotSize, 414, slotSize, true);

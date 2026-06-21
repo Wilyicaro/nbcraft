@@ -320,7 +320,7 @@ void Gui::renderAnimatedCharacter(int x, int y, float partialTick)
 #endif
 	MatrixStack::Ref matrix = MatrixStack::World.push();
 
-	int scale = 12;
+	constexpr int scale = 12;
 
 	matrix->translate(Vec3(x, y, 50));
 	matrix->scale(Vec3(-scale, scale, scale));
@@ -330,8 +330,8 @@ void Gui::renderAnimatedCharacter(int x, int y, float partialTick)
 	float prevYRot = player->m_rot.y;
 	float prevXORot = player->m_oRot.x;
 
-	float dx = -40;
-	float dy = 10;
+	constexpr float dx = -40;
+	constexpr float dy = 10;
 
 	matrix->rotate(135.0f, Vec3(0.0f, 1.0f, 0.0f));
 	Lighting::turnOn(matrix);
