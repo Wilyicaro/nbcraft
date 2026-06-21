@@ -45,7 +45,7 @@ void TabButton::render(Minecraft* pMinecraft, const MenuPointer& pointer)
 {
 	if (!isVisible()) return;
 
-	if (m_color.a == 0.0f)
+	if (m_color.a == 0.0f)i
 		return;
 
 	currentShaderColor = m_color;
@@ -53,7 +53,7 @@ void TabButton::render(Minecraft* pMinecraft, const MenuPointer& pointer)
     renderBg(pMinecraft, pointer);
 	
 	if (m_iconImage.isValid())
-		_renderImage(*pMinecraft, m_iconImage);
+		_renderImage(*pMinecraft, isSelected() ? m_iconImage : m_downIconImage);
 	else
 		_renderMessage(*pMinecraft);
 }
