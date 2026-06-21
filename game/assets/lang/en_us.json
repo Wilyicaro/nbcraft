@@ -70,6 +70,7 @@
     "loadingTip.woolFire": "Take caution when building structures made of wool in open air, as lightning from thunderstorms can set wool on fire.",
     "loading.initializing": "Initializing server",
     "loading.spawnArea": "Loading spawn area",
+    "options.animatedCharacter": "Animated Character",
     "options.thirdPerson": "Third Person View",
     "options.fancyGraphics": "Fancy Graphics",
     "options.blockOutlines": "Block Outlines",

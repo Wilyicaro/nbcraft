@@ -498,6 +498,7 @@ public:
 	LogoTypeOption m_logoType;
 	HUDSizeOption m_hudSize;
 	BoolOption m_classicCrafting;
+	BoolOption m_animatedCharacter;
 	VsyncOption m_vSync;
 	ResourcePackStack m_resourcePacks;
 };
@@ -550,6 +551,8 @@ public:
 	OPTION(m_dynamicHand);                 \
 	OPTION(m_uiTheme);                     \
 	OPTION(m_logoType);                    \
+	OPTION(m_hudSize);					   \
+	OPTION(m_animatedCharacter);           \
 
 #define OPTIONS_LIST_VIDEO_EXPERIMENTAL    \
 	HEADER("Experimental");                \
