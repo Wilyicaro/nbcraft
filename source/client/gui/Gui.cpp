@@ -16,6 +16,7 @@
 #include "client/renderer/entity/ItemRenderer.hpp"
 #include "client/renderer/renderer/RenderMaterialGroup.hpp"
 #include "renderer/ShaderConstants.hpp"
+#include "client/renderer/Lighting.hpp"
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4244)
@@ -57,6 +58,7 @@ Gui::Gui(Minecraft* pMinecraft)
 	m_bRenderMessages = true;
     m_bRenderHunger = false;
 	m_feedbackMeshesBuilt = false;
+	m_animatedCharacterTimer = 0;
 
 	m_pMinecraft = pMinecraft;
 }
@@ -168,10 +170,16 @@ void Gui::render(float f, bool bHaveScreen, int mouseX, int mouseY)
 	renderer.setupGuiScreen();
 
 	if (bHaveScreen && isConsole)
+	{
+		m_animatedCharacterTimer = 0;
 		return;
+	}
 
 	if (!mc.m_pLevel || !mc.m_pLocalPlayer)
+	{
+		m_animatedCharacterTimer = 0;
 		return;
+	}
 
 	if (mc.getOptions()->m_fancyGraphics.get() && isVignetteAvailable() && !isConsole)
 	{
@@ -226,6 +234,18 @@ void Gui::render(float f, bool bHaveScreen, int mouseX, int mouseY)
 	{
 		renderMessages(false);
 	}
+
+	// Disabled on non-Console UI Themes for now
+	if (mc.getOptions()->m_animatedCharacter.get() && isConsole)
+	{
+		MatrixStack::Ref matrix = MatrixStack::World.push();
+		matrix->translate(Vec3(GuiWidth / 20, GuiHeight / 20, 0));
+		if (isConsole)
+		{
+			matrix->scale(mc.getOptions()->m_hudSize.get());
+		}
+		renderAnimatedCharacter(8, 4, f);
+	}
 }
 
 void Gui::tick()
@@ -234,6 +254,9 @@ void Gui::tick()
 		field_A18--;
 
 	m_ticks++;
+
+	if (m_animatedCharacterTimer > 0)
+		m_animatedCharacterTimer--;
 
 	for (size_t i = 0; i < m_guiMessages.size(); i++)
 	{
@@ -263,10 +286,8 @@ void Gui::renderSlot(int slot, int x, int y, float f)
 			matrix->translate(Vec3(-(x + 8), -(y + 12), 0));
 		}
 
-		ItemRenderer::singleton().renderGuiItem(m_pMinecraft->m_pFont, m_pMinecraft->m_pTextures, item, x, y, true);
+		ItemRenderer::singleton().renderGuiItem(*m_pMinecraft, item, x, y, true);
 	}
-
-	//ItemRenderer::renderGuiItemDecorations(m_pMinecraft->m_pFont, m_pMinecraft->m_pTextures, item, x, y);
 }
 
 void Gui::renderSlotOverlay(int slot, int x, int y, float f)
@@ -277,7 +298,67 @@ void Gui::renderSlotOverlay(int slot, int x, int y, float f)
 	if (item.isEmpty())
 		return;
 
-	ItemRenderer::singleton().renderGuiItemOverlay(m_pMinecraft->m_pFont, m_pMinecraft->m_pTextures, item, x, y);
+	ItemRenderer::singleton().renderGuiItemOverlay(*m_pMinecraft, item, x, y);
+}
+
+void Gui::renderAnimatedCharacter(int x, int y, float partialTick)
+{
+	if (!m_pMinecraft->m_pLocalPlayer) return;
+	
+	LocalPlayer* player = m_pMinecraft->m_pLocalPlayer;
+	if (player->isSneaking())
+		m_animatedCharacterTimer = 10;
+	else if (player->isSneaking())
+		m_animatedCharacterTimer = 10;
+	else if (player->m_bFlying)
+		m_animatedCharacterTimer = 2;
+
+	if (!m_animatedCharacterTimer) return;
+
+#if MCE_GFX_API_OGL && !defined(FEATURE_GFX_SHADERS)
+	glEnable(GL_RESCALE_NORMAL);
+#endif
+	MatrixStack::Ref matrix = MatrixStack::World.push();
+
+	constexpr int scale = 12;
+
+	matrix->translate(Vec3(x, y, 50));
+	matrix->scale(Vec3(-scale, scale, scale));
+	matrix->rotate(180.0f, Vec3(0.0f, 0.0f, 1.0f));
+
+	float prevXRot = player->m_rot.x;
+	float prevYRot = player->m_rot.y;
+	float prevXORot = player->m_oRot.x;
+
+	constexpr float dx = -40;
+	constexpr float dy = 10;
+
+	matrix->rotate(135.0f, Vec3(0.0f, 1.0f, 0.0f));
+	Lighting::turnOn(matrix);
+	matrix->rotate(-135.0f, Vec3(0.0f, 1.0f, 0.0f));
+
+	matrix->rotate(-Mth::atan(dy / 40.0f) * 20.0f, Vec3(1.0f, 0.0f, 0.0f));
+	matrix->rotate(player->m_yBodyRot - (Mth::atan(dx / 40.0f) * 20), Vec3(0.0f, 1.0, 0.0f));
+	player->m_rot.x = player->m_yBodyRot - 15.0f;
+	player->m_oRot.x = player->m_rot.x;
+	player->m_rot.y = -Mth::atan(dy / 40.0f) * 20.0f;
+
+	EntityRenderer* renderer = EntityRenderDispatcher::instance->getRenderer(player->m_renderType);
+	float oldShadowRadius = renderer->m_shadowRadius;
+	renderer->m_shadowRadius = 0.0f;
+	player->m_minBrightness = 1.0f;
+	EntityRenderDispatcher::instance->m_rot.y = 180;
+	EntityRenderDispatcher::instance->render(*player, Vec3::ZERO, 0.0f, 1.0f);
+	player->m_minBrightness = 0.0f;
+	renderer->m_shadowRadius = oldShadowRadius;
+	player->m_rot.x = prevXRot;
+	player->m_oRot.x = prevXORot;
+	player->m_rot.y = prevYRot;
+
+	Lighting::turnOff();
+#if MCE_GFX_API_OGL && !defined(FEATURE_GFX_SHADERS)
+	glDisable(GL_RESCALE_NORMAL);
+#endif
 }
 
 int Gui::getSlotIdAt(int mouseX, int mouseY)
@@ -346,7 +427,7 @@ void Gui::handleClick(int clickID, int mouseX, int mouseY)
 		if (m_pMinecraft->getLocalPlayerGameMode()->isSurvivalType())
 			m_pMinecraft->setScreen(new InventoryScreen(m_pMinecraft->m_pLocalPlayer));
 		else
-			m_pMinecraft->setScreen(new CreativeScreen(m_pMinecraft->m_pLocalPlayer->m_pInventory));
+			m_pMinecraft->getScreenChooser()->pushCreativeScreen();
 	}
 	else
 		m_pMinecraft->m_pLocalPlayer->m_pInventory->selectSlot(slot);
@@ -381,7 +462,7 @@ void Gui::handleUserAction(const ActionInfo& info)
 		if (m_pMinecraft->getLocalPlayerGameMode()->isSurvivalType())
 			m_pMinecraft->setScreen(new InventoryScreen(m_pMinecraft->m_pLocalPlayer));
 		else
-			m_pMinecraft->setScreen(new CreativeScreen(m_pMinecraft->m_pLocalPlayer->m_pInventory));
+			m_pMinecraft->getScreenChooser()->pushCreativeScreen();
 		return;
 	}
 

@@ -1,7 +1,7 @@
 #include "VerticalLayout.hpp"
 
-VerticalLayout::VerticalLayout(Screen* screen) :
-	m_pScreen(screen)
+VerticalLayout::VerticalLayout(Screen* screen)
+	: m_pScreen(screen)
 	, m_pSelectedElement(nullptr)
 	, m_pClickedElement(nullptr)
 	, m_spacing(0)
@@ -34,26 +34,24 @@ bool VerticalLayout::isLastIn(AreaNavigation::Direction dir)
 bool VerticalLayout::selectElementById(ID id, bool sound)
 {
 	GuiElement* element = getElement(id);
-	if (element)
-	{
-		selectElement(element);
-		if (sound)
-			m_pScreen->_playSelectSound();
-		return true;
-	}
-	return false;
+	if (!element) return false;
+
+	selectElement(element);
+	if (sound)
+		m_pScreen->_playSelectSound();
+
+	return true;
 }
 
 void VerticalLayout::selectElement(GuiElement* element)
 {
-	if (element != m_pSelectedElement)
-	{
-		if (m_pSelectedElement)
-			m_pSelectedElement->setSelected(false);
-		m_pSelectedElement = element;
-		if (m_pSelectedElement)
-			m_pSelectedElement->setSelected(true);
-	}
+	if (element == m_pSelectedElement) return;
+
+	if (m_pSelectedElement)
+		m_pSelectedElement->setSelected(false);
+	m_pSelectedElement = element;
+	if (m_pSelectedElement)
+		m_pSelectedElement->setSelected(true);
 }
 
 void VerticalLayout::init(const IntRectangle& rect, int spacing, bool cyclic)
