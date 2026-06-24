@@ -372,7 +372,10 @@ SlotDisplay& ContainerScreen::getSlotDisplay(int id)
 void ContainerScreen::onClose()
 {
     if (m_pMinecraft->m_pLocalPlayer)
+    {
         m_pMinecraft->m_pLocalPlayer->closeContainer();
+        m_pMenu = nullptr;
+    }
 }
 
 void ContainerScreen::tick()
