@@ -3,13 +3,14 @@
 
 bool ClientCraftContext::craft(Recipe* recipe)
 {
+	Minecraft& mc = Minecraft::singleton();
 	if (CraftContext::craft(recipe)) 
 	{
-		// this feels very wrong...
-		Minecraft* mc = ((LocalPlayer*)pInventory->m_pPlayer)->m_pMinecraft;
-		mc->m_pSoundEngine->playUI("random.pop");
+		mc. m_pSoundEngine->playUI("random.pop");
 		return true;
 	}
+	else
+		mc.m_pSoundEngine->playUI(C_SOUND_UI_CRAFTFAIL);
 
 	return false;
 }

@@ -45,6 +45,7 @@
 #include "renderer/RenderContextImmediate.hpp"
 #include "client/renderer/LogoRenderer.hpp"
 
+Minecraft* Minecraft::singletonPtr;
 float Minecraft::_renderScaleMultiplier = 1.0f;
 
 int Minecraft::width  = C_DEFAULT_SCREEN_WIDTH;
@@ -110,6 +111,8 @@ Minecraft::Minecraft()
 	m_fLastUpdated = 0;
 	m_fDeltaTime = 0;
 	m_lastInteractTime = 0;
+
+	singletonPtr = this;
 }
 
 Minecraft::~Minecraft()
@@ -1409,6 +1412,11 @@ ScreenChooser* Minecraft::getScreenChooser()
 UITheme Minecraft::getUiTheme()
 {
 	return m_pScreen ? m_pScreen->m_uiTheme : getOptions()->getUiTheme();
+}
+
+Minecraft& Minecraft::singleton()
+{
+	return *singletonPtr;
 }
 
 void Minecraft::reloadFancy(bool isFancy)
