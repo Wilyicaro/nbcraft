@@ -185,12 +185,13 @@ void ItemRenderer::blit(int dx, int dy, int sx, int sy, int tw, int th, const Co
 	float vx = float(sx), vy = float(sy);
 
 	t.begin(4);
-	t.color(color);
+	if (color != Color::WHITE)
+		t.color(color);
 	t.vertexUV(ex,      ey + uh, 0.0f, float(vx)      / 256.0f, float(vy + uh) / 256.0f);
 	t.vertexUV(ex + uw, ey + uh, 0.0f, float(vx + uw) / 256.0f, float(vy + uh) / 256.0f);
 	t.vertexUV(ex + uw, ey,      0.0f, float(vx + uw) / 256.0f, float(vy)      / 256.0f);
 	t.vertexUV(ex,      ey,      0.0f, float(vx)      / 256.0f, float(vy)      / 256.0f);
-	t.draw(m_itemMaterials.ui_texture_and_color);
+	t.draw(color == Color::WHITE ? m_itemMaterials.ui_textured : m_itemMaterials.ui_texture_and_color);
 }
 void ItemRenderer::renderGuiItemOverlay(Minecraft& mc, const ItemStack& item, int x, int y)
 {

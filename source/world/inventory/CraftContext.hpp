@@ -17,8 +17,8 @@ struct CraftContext
 	{
 	}
 
-	static void handleCompactItemStackList(std::vector<ItemStack>& compactList, const std::vector<ItemStack>& items);
-	static void handleCompactInventoryList(std::vector<ItemStack>& compactList, Inventory* inventory, const ItemStack& carriedItem);
+	static void HandleCompactItemStackList(std::vector<ItemStack>& compactList, const std::vector<ItemStack>& items);
+	static void HandleCompactInventoryList(std::vector<ItemStack>& compactList, Inventory* inventory, const ItemStack& carriedItem);
 
 	std::vector<ItemStack> getShapedIngredients(Recipe* recipe);
 

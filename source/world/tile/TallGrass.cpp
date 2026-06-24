@@ -1,7 +1,7 @@
 #include "TallGrass.hpp"
 #include "world/level/Level.hpp"
 #include "client/renderer/PatchManager.hpp"
-#include <client/renderer/FoliageColor.hpp>
+#include "client/renderer/FoliageColor.hpp"
 
 TallGrass::TallGrass(TileID id, int texture) : Bush(id, texture)
 {

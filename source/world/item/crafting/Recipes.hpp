@@ -144,7 +144,7 @@ public:
         MECHANISM,
         TRANSPORT,
         DECORATION,
-        TOTAL_GROUP_CONSOLE
+        GROUPS_COUNT
     };
 
 public:
@@ -165,7 +165,7 @@ public:
     {
         m_recipes.push_back(recipe);
 
-        if (group >= TOTAL_GROUP_CONSOLE) return;
+        if (group >= GROUPS_COUNT) return;
 
         std::vector<RecipeList>& recipeLists = m_recipesByConsoleGroup[group];
 
@@ -213,5 +213,5 @@ private:
 
 public:
     RecipeList m_recipes;
-    std::vector<RecipeList> m_recipesByConsoleGroup[TOTAL_GROUP_CONSOLE];
+    std::vector<RecipeList> m_recipesByConsoleGroup[GROUPS_COUNT];
 };

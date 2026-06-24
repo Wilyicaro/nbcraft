@@ -30,7 +30,7 @@ void ContainerScreen::_renderSlot(Slot& slot)
     if (display.bIconHolder)
     {
         MatrixStack::Ref matrix = MatrixStack::World.push();
-        float off = 3 * display.size / 50.0f;
+        float off = 3.0f * display.size / 50.0f;
         matrix->translate(Vec3(-off, -off, 0.0f));
         blitSprite(*m_pMinecraft->m_pTextures, slot.hasItem() && display.bIsWarning ? "gui/console/Graphics/IconHolderRed.png" : "gui/console/Graphics/IconHolder.png", display.x, display.y, display.size, display.size);
     }
@@ -64,7 +64,7 @@ void ContainerScreen::_renderSlot(Slot& slot)
     if (display.bIsWarning)
     {
         MatrixStack::Ref matrix = MatrixStack::World.push();
-        float off = 3 * display.size / 50.0f;
+        float off = 3.0f * display.size / 50.0f;
         matrix->translate(Vec3(-off, -off, 0.0f));
         blitSprite(*m_pMinecraft->m_pTextures, "gui/console/Graphics/Warning.png", display.x + 2, display.y + 2, 16, 16);
     }
@@ -190,7 +190,7 @@ void ContainerScreen::_selectSlot(Slot* slot)
     if (!slot) return;
     const SlotDisplay& display = getSlotDisplay(*slot);
     if (!display.bVisible) return;
-    int off = 3 * display.size / 50;
+    int off = 3.0f * display.size / 50;
     handlePointerLocation(m_leftPos + display.x - off + display.size / 2, m_topPos + display.y - off + display.size / 2);
 }
 

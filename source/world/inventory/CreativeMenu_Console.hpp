@@ -19,7 +19,7 @@ public:
         FOOD,
         TOOLS,
         MISC,
-        TOTAL_GROUP
+        GROUP_COUNT
     };
 
     CreativeMenu_Console(Container* inventory, Container* container);
@@ -39,6 +39,6 @@ private:
 private:
     Container* m_container;
 
-    static std::vector<ItemStack> creativeItems[TOTAL_GROUP];
+    static std::vector<ItemStack> creativeItems[GROUP_COUNT];
     static bool initialized;
 };

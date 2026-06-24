@@ -270,7 +270,7 @@ void ItemInHandRenderer::renderItem(const Entity& entity, const ItemStack& item,
             t.vertexUV(1.0f, i * C_ONE_PIXEL, -C_ONE_PIXEL, texU_1, Mth::Lerp(texV_2, texV_1, i * C_ONE_PIXEL));
         }
         
-        t.draw(m_materials.item_in_hand_color);
+        t.draw(color == Color::WHITE ? m_materials.item_in_hand : m_materials.item_in_hand_color);
     }
 }
 

@@ -16,7 +16,7 @@ void handleCompactItemStackListAdd(std::vector<ItemStack>& compactList, const It
 	compactList.push_back(item);
 }
 
-void CraftContext::handleCompactItemStackList(std::vector<ItemStack>& compactList, const std::vector<ItemStack>& items)
+void CraftContext::HandleCompactItemStackList(std::vector<ItemStack>& compactList, const std::vector<ItemStack>& items)
 {
 	for (size_t i = 0; i < items.size(); ++i)
 	{
@@ -26,9 +26,9 @@ void CraftContext::handleCompactItemStackList(std::vector<ItemStack>& compactLis
 	}
 }
 
-void CraftContext::handleCompactInventoryList(std::vector<ItemStack>& compactList, Inventory* inventory, const ItemStack& carriedItem)
+void CraftContext::HandleCompactInventoryList(std::vector<ItemStack>& compactList, Inventory* inventory, const ItemStack& carriedItem)
 {
-	handleCompactItemStackList(compactList, inventory->getItems());
+	HandleCompactItemStackList(compactList, inventory->getItems());
 	if (!carriedItem.isEmpty()) handleCompactItemStackListAdd(compactList, carriedItem);
 }
 
@@ -86,7 +86,7 @@ bool CraftContext::canCraft(Recipe* recipe)
 	bool setsWarning = shouldSetWarning(recipe);
 	const std::vector<ItemStack>& ings = getShapedIngredients(recipe);
 	std::vector<ItemStack> invList;
-	handleCompactInventoryList(invList, pInventory, pInventory->getCarried());
+	HandleCompactInventoryList(invList, pInventory, pInventory->getCarried());
 
 	for (size_t i1 = 0; i1 < ings.size(); i1++)
 	{

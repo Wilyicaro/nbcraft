@@ -118,15 +118,14 @@ public:
 	UITheme getUiTheme();
 	//const Entity& getCameraEntity() const { return *m_pCameraEntity; }
 
-	static Minecraft& singleton();
-
 private:
-	static Minecraft* singletonPtr;
+	static Minecraft* _singletonPtr;
     // Value provided by the OS
     static float _renderScaleMultiplier;
 	static InputMethod::Type _inputMethod;
 
 public:
+	static Minecraft& singleton() { return *_singletonPtr; }
     static float GetRenderScaleMultiplier() { return _renderScaleMultiplier; }
     static void SetRenderScaleMultiplier(float value) { _renderScaleMultiplier = value; }
 	static InputMethod::Type GetInputMethod() { return _inputMethod; }

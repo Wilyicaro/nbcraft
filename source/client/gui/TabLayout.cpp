@@ -43,9 +43,10 @@ bool TabLayout::selectElement(GuiElement* element)
 		m_pSelectedElement->setSelected(false);
 	m_pSelectedElement = element;
 	if (m_pSelectedElement)
+	{
 		m_pSelectedElement->setSelected(true);
-	if (element)
 		onSelectElement(element);
+	}
 
 	return true;
 }
