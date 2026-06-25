@@ -96,7 +96,7 @@ bool ContainerScreen::_isHovering(const Slot& slot) const
 bool ContainerScreen::_isHovering(const Slot& slot, int mouseX, int mouseY) const
 {
     const SlotDisplay& display = getSlotDisplay(slot);
-    if (!display.isInteractable()) return false;
+    if (!display.isVisible) return false;
     mouseX -= m_leftPos;
     mouseY -= m_topPos;
     float off = 3 * display.size / 50.0f;
@@ -122,11 +122,14 @@ void ContainerScreen::_renderContent(float partialTick)
         {
             const SlotDisplay& display = getSlotDisplay(*slot);
             hoveredSlot = slot;
-            //@NOTE: fillGradient is being used instead of fill, so the shader color won't be changed, I think the same happened on the original
-            MatrixStack::Ref highlightMatrix = MatrixStack::World.push();
-            highlightMatrix->translate(Vec3(display.x, display.y, 0));
-            highlightMatrix->scale(display.size / 18.0f);
-            fillGradient(0, 0, 16, 16, 0x80FFFFFF, 0x80FFFFFF);
+            if (display.isInteractable)
+            {
+                //@NOTE: fillGradient is being used instead of fill, so the shader color won't be changed, I think the same happened on the original
+                MatrixStack::Ref highlightMatrix = MatrixStack::World.push();
+                highlightMatrix->translate(Vec3(display.x, display.y, 0));
+                highlightMatrix->scale(display.size / 18.0f);
+                fillGradient(0, 0, 16, 16, 0x80FFFFFF, 0x80FFFFFF);
+            }
         }
     }
 
@@ -308,6 +311,7 @@ void ContainerScreen::slotClicked(const MenuPointer& pointer, MouseButtonType bu
     if (button == MOUSE_BUTTON_LEFT || button == MOUSE_BUTTON_RIGHT)
     {
         Slot* slot = _findSlot(pointer.x, pointer.y);
+        if (slot && !getSlotDisplay(*slot).isInteractable) return;
         bool outside = pointer.x < m_leftPos || pointer.y < m_topPos || pointer.x >= m_leftPos + m_imageWidth || pointer.y >= m_topPos + m_imageHeight;
         Container::SlotID slotId = -1;
         if (slot) slotId = slot->m_id;

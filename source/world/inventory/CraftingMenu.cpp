@@ -83,13 +83,13 @@ ItemStack CraftingMenu::quickMoveStack(Container::SlotID slotId)
         ItemStack& slotItem = slot->getItem();
         item = slotItem;
         if (slotId == 0)
-            moveItemStackTo(slotItem, 10, 46, true);
-        else if (slotId >= 10 && slotId < 37)
-            moveItemStackTo(slotItem, 37, 46, false);
-        else if (slotId >= 37 && slotId < 46)
-            moveItemStackTo(slotItem, 10, 37, false);
+            moveItemStackTo(slotItem, m_pCraftSlots->getContainerSize() + 1, m_pCraftSlots->getContainerSize() + 1 + 26, true);
+        else if (slotId >= m_pCraftSlots->getContainerSize() + 1 && slotId < m_pCraftSlots->getContainerSize() + 1 + 27)
+            moveItemStackTo(slotItem, m_pCraftSlots->getContainerSize() + 1 + 27, m_pCraftSlots->getContainerSize() + 1 + 26, false);
+        else if (slotId >= m_pCraftSlots->getContainerSize() + 1 + 27 && slotId < m_pCraftSlots->getContainerSize() + 1 + 36)
+            moveItemStackTo(slotItem, m_pCraftSlots->getContainerSize() + 1, m_pCraftSlots->getContainerSize() + 1 + 27, false);
         else
-            moveItemStackTo(slotItem, 10, 46, false);
+            moveItemStackTo(slotItem, m_pCraftSlots->getContainerSize() + 1, m_pCraftSlots->getContainerSize() + 1 + 26, false);
 
         if (slotItem.m_count == 0)
             slot->set(ItemStack::EMPTY);

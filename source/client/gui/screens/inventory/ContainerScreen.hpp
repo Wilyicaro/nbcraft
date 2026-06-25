@@ -36,11 +36,6 @@ struct SlotDisplay
         hasIconHolder(iconHolder)
     {
     }
-
-    bool isInteractable() const
-    {
-        return isVisible && isInteractable;
-    }
 };
 
 class ContainerScreen : public Screen
