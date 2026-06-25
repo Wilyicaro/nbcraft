@@ -66,7 +66,7 @@ public:
 	void set(int inCount);
 	bool canDestroySpecial(const Tile*);
 	std::string getDescriptionId();
-	std::string getHovertextName() const;
+	std::string getHovertextName();
 	float getDestroySpeed(const Tile*);
 	int getIcon() const;
 	int getMaxDamage() const;

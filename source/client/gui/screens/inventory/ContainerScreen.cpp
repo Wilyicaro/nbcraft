@@ -147,7 +147,7 @@ void ContainerScreen::_renderContent(float partialTick)
 
     if (!inv->getCarried() && hoveredSlot && hoveredSlot->hasItem())
     {
-        std::string name = Language::get(hoveredSlot->getItem().getItem()->getName());
+        std::string name = Language::get(hoveredSlot->getItem().getHovertextName());
         if (!name.empty())
         {
             int w = m_pFont->width(name);

@@ -729,6 +729,16 @@ std::string Item::getHovertextName() const
 	return getName();
 }
 
+std::string Item::getName(ItemStack& stack) const
+{
+	return getDescriptionId(&stack) + ".name";
+}
+
+std::string Item::getHovertextName(ItemStack& stack) const
+{
+	return getName(stack);
+}
+
 void Item::onCraftedBy(ItemStack*, Player*, Level*)
 {
 }

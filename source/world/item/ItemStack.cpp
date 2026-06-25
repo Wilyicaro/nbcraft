@@ -232,12 +232,12 @@ std::string ItemStack::getDescriptionId()
 	return getItem()->getDescriptionId(this);
 }
 
-std::string ItemStack::getHovertextName() const
+std::string ItemStack::getHovertextName()
 {
 	if (hasCustomHoverName())
 		return getHoverName();
 	else
-		return getItem()->getHovertextName();
+		return getItem()->getHovertextName(*this);
 }
 
 float ItemStack::getDestroySpeed(const Tile* tile)
