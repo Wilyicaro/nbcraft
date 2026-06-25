@@ -84,9 +84,6 @@ void CompassTexture::tick()
     int g;
     int b;
     short a;
-    int rr;
-    int gg;
-    int bb;
     for (d = -4; d <= 4; ++d) {
         x = (int)(8.5 + cos * (double)d * 0.3);
         y = (int)(7.5 - sin * (double)d * 0.3 * 0.5);
