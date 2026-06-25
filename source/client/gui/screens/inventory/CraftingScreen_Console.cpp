@@ -142,7 +142,7 @@ void CraftingScreen_Console::_renderLabels()
 
     if (!m_pMenu->getSlot(0)->hasItem()) return;
 
-    std::string resultName = Language::get(m_pMenu->getSlot(0)->getItem().getItem()->getName());
+    std::string resultName = Language::get(m_pMenu->getSlot(0)->getItem().getHovertextName());
 
     m_pFont->drawScalable(resultName, 15 + (m_craftContext.bIs2x2 ? 250 : 293) / 2 - m_pFont->width(resultName), 294, Color::TEXT_GREY);
 }
