@@ -45,16 +45,16 @@ void CompassTexture::tick()
         m_pixels[i * 4 + 3] = a;
     }
 
-    float rott = 0.0;
+    float rott = 0.0f;
     float rotd;
     float sin;
     if (m_pMinecraft->m_pLevel && m_pMinecraft->m_pLocalPlayer)
     {
         rotd = m_pMinecraft->m_pLevel->getSharedSpawnPos().x - m_pMinecraft->m_pLocalPlayer->m_pos.x;
         sin = m_pMinecraft->m_pLevel->getSharedSpawnPos().z - m_pMinecraft->m_pLocalPlayer->m_pos.z;
-        rott = (m_pMinecraft->m_pLocalPlayer->m_rot.y - 90.0F) * M_PI / 180.0 - Mth::atan2(sin, rotd);
+        rott = (m_pMinecraft->m_pLocalPlayer->m_rot.y - 90.0f) * M_PI / 180.0f - Mth::atan2(sin, rotd);
         if (m_pMinecraft->m_pLevel->m_pDimension->m_bFoggy) {
-            rott = Mth::random() * M_PI * 2.0;
+            rott = Mth::random() * M_PI * 2.0f;
         }
     }
 
@@ -64,17 +64,17 @@ void CompassTexture::tick()
     while (rotd >= M_PI)
         rotd -= 2 * M_PI;
 
-    if (rotd < -1.0)
-        rotd = -1.0;
+    if (rotd < -1.0f)
+        rotd = -1.0f;
 
-    if (rotd > 1.0)
-        rotd = 1.0;
+    if (rotd > 1.0f)
+        rotd = 1.0f;
 
-    m_rota += rotd * 0.1;
-    m_rota *= 0.8;
+    m_rota += rotd * 0.1f;
+    m_rota *= 0.8f;
     m_rot += m_rota;
     sin = Mth::sin(m_rot);
-    double cos = Mth::cos(m_rot);
+    float cos = Mth::cos(m_rot);
 
     int d;
     int x;
@@ -85,8 +85,8 @@ void CompassTexture::tick()
     int b;
     short a;
     for (d = -4; d <= 4; ++d) {
-        x = (int)(8.5 + cos * (double)d * 0.3);
-        y = (int)(7.5 - sin * (double)d * 0.3 * 0.5);
+        x = (int)(8.5f + cos * (float)d * 0.3f);
+        y = (int)(7.5f - sin * (float)d * 0.3f * 0.5f);
         i = y * 16 + x;
         r = 100;
         g = 100;
@@ -109,8 +109,8 @@ void CompassTexture::tick()
     }
 
     for (d = -8; d <= 16; ++d) {
-        x = (int)(8.5 + sin * (double)d * 0.3);
-        y = (int)(7.5 + cos * (double)d * 0.3 * 0.5);
+        x = (int)(8.5f + sin * (float)d * 0.3f);
+        y = (int)(7.5f + cos * (float)d * 0.3f * 0.5f);
         i = y * 16 + x;
         r = d >= 0 ? 255 : 100;
         g = d >= 0 ? 20 : 100;

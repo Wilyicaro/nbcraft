@@ -3,7 +3,7 @@
 
 PortalTexture::PortalTexture() : DynamicTexture(/*Tile::portal->m_TextureFrame*/+0), m_time(0)
 {
-    Random random(100L);
+    Random random(100);
 
     for (int time = 0; time < 32; ++time)
     {
@@ -11,42 +11,38 @@ PortalTexture::PortalTexture() : DynamicTexture(/*Tile::portal->m_TextureFrame*/
         {
             for (int y = 0; y < 16; ++y)
             {
-                float pow = 0.0F;
+                float pow = 0.0f;
 
                 for (int i = 0; i < 2; ++i)
                 {
                     float xo = (float)(i * 8);
                     float yo = (float)(i * 8);
-                    float xd = ((float)x - xo) / 16.0F * 2.0F;
-                    float yd = ((float)y - yo) / 16.0F * 2.0F;
-                    if (xd < -1.0F) {
-                        xd += 2.0F;
-                    }
+                    float xd = ((float)x - xo) / 16.0f * 2.0f;
+                    float yd = ((float)y - yo) / 16.0f * 2.0f;
+                    if (xd < -1.0f)
+                        xd += 2.0f;
 
-                    if (xd >= 1.0F) {
-                        xd -= 2.0F;
-                    }
+                    if (xd >= 1.0f)
+                        xd -= 2.0f;
 
-                    if (yd < -1.0F) {
-                        yd += 2.0F;
-                    }
+                    if (yd < -1.0f)
+                        yd += 2.0f;
 
-                    if (yd >= 1.0F) {
-                        yd -= 2.0F;
-                    }
+                    if (yd >= 1.0f)
+                        yd -= 2.0f;
 
                     float dd = xd * xd + yd * yd;
-                    float pp = Mth::atan2((double)yd, (double)xd) + ((float)time / 32.0F * M_PI * 2.0F - dd * 10.0F + (float)(i * 2)) * (float)(i * 2 - 1);
-                    pp = (Mth::sin(pp) + 1.0F) / 2.0F;
-                    pp /= dd + 1.0F;
-                    pow += pp * 0.5F;
+                    float pp = Mth::atan2((float)yd, (float)xd) + ((float)time / 32.0f * M_PI * 2.0f - dd * 10.0f + (float)(i * 2)) * (float)(i * 2 - 1);
+                    pp = (Mth::sin(pp) + 1.0f) / 2.0f;
+                    pp /= dd + 1.0f;
+                    pow += pp * 0.5f;
                 }
 
-                pow += random.nextFloat() * 0.1F;
-                int r = (int)(pow * pow * 200.0F + 55.0F);
-                int g = (int)(pow * pow * pow * pow * 255.0F);
-                int b = (int)(pow * 100.0F + 155.0F);
-                int a = (int)(pow * 100.0F + 155.0F);
+                pow += random.nextFloat() * 0.1f;
+                int r = (int)(pow * pow * 200.0f + 55.0f);
+                int g = (int)(pow * pow * pow * pow * 255.0f);
+                int b = (int)(pow * 100.0f + 155.0f);
+                int a = (int)(pow * 100.0f + 155.0f);
                 int i = y * 16 + x;
                 m_frames[time][i * 4 + 0] = r;
                 m_frames[time][i * 4 + 1] = g;

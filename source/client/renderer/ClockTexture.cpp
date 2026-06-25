@@ -39,13 +39,13 @@ void ClockTexture::tick()
     while (rotd >= M_PI)
         rotd -= 2 * M_PI;
 
-    if (rotd < -1.0)
-        rotd = -1.0;
+    if (rotd < -1.0f)
+        rotd = -1.0f;
 
-    if (rotd > 1.0)
-        rotd = 1.0;
+    if (rotd > 1.0f)
+        rotd = 1.0f;
 
-    m_rota += rotd * 0.1;
+    m_rota += rotd * 0.1f;
     m_rota *= 0.8;
     m_rot += m_rota;
     float sin = Mth::sin(m_rot);
