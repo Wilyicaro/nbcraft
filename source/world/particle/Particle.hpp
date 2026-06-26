@@ -161,9 +161,13 @@ class TakeAnimationParticle : public Particle
 public:
 	TakeAnimationParticle(Level*, Entity* throwed, Entity* thrower, float vel);
 	~TakeAnimationParticle();
+
+public:
 	void tick() override;
 	int getParticleTexture() override;
 	void render(Tesselator&, float, float, float, float, float, float) override;
+
+public:
 	Entity* m_pThrowed;
 	Entity* m_pThrower;
 	float m_speed;
