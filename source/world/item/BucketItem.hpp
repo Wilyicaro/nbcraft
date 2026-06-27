@@ -2,13 +2,11 @@
 
 #include "Item.hpp"
 
-class FoodItem : public Item
+class BucketItem : public Item
 {
 public:
-	FoodItem(int id, int nutrition);
-	
+	BucketItem(int id, TileID content);
 	bool use(ItemStack&, Level*, Player*) const override;
-
 protected:
-	int m_nutrition;
+	TileID m_content;
 };

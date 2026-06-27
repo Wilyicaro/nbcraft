@@ -8,5 +8,5 @@ public:
 	EggItem(int);
 
 public:
-	ItemStack* use(ItemStack* inst, Level* level, Mob* user) const;
+	bool use(ItemStack& inst, Level* level, Player* user) const override;
 };
