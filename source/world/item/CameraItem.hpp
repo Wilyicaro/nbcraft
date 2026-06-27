@@ -15,5 +15,5 @@ public:
 	CameraItem(int id);
 
 public:
-	bool use(ItemStack&, Level* level, Player* user) const override;
+	bool use(ItemStack&, Level* level, Mob& mob) const override;
 };

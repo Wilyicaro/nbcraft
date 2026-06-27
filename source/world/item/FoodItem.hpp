@@ -7,7 +7,7 @@ class FoodItem : public Item
 public:
 	FoodItem(int id, int nutrition);
 	
-	bool use(ItemStack&, Level*, Player*) const override;
+	bool use(ItemStack&, Level*, Mob& mob) const override;
 
 protected:
 	int m_nutrition;

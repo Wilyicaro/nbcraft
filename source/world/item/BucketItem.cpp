@@ -9,10 +9,13 @@ BucketItem::BucketItem(int id, TileID content) : Item(id)
     m_content = content;
 }
 
-bool BucketItem::use(ItemStack& item, Level* level, Player* player) const
+bool BucketItem::use(ItemStack& item, Level* level, Mob& mob) const
 {
-    Vec3 headPos(player->m_pos.x, player->m_pos.y + 1.62 - player->m_heightOffset, player->m_pos.z);
-    float constexpr r = M_PI / 180;
+    if (!mob.isPlayer()) return false;
+
+    Player* player = static_cast<Player*>(&mob);
+    Vec3 headPos(mob.m_pos.x, mob.m_pos.y + 1.62f - mob.m_heightOffset, mob.m_pos.z);
+    constexpr float r = M_PI / 180;
     float var14 = Mth::cos(-player->m_rot.x * r - M_PI);
     float var15 = Mth::sin(-player->m_rot.x * r - M_PI);
     float var16 = -Mth::cos(-player->m_rot.y * r);
@@ -30,15 +33,18 @@ bool BucketItem::use(ItemStack& item, Level* level, Player* player) const
             if (!level->mayInteract(player, tp))
                 return false;
 
+            Material* material = level->getMaterial(tp);
+            TileData data = level->getData(tp);
+
             if (m_content == TILE_AIR)
             {
-                if (level->getMaterial(tp) == Material::water && level->getData(tp) == 0)
+                if (material == Material::water && data == 0)
                 {
                     level->setTile(tp, TILE_AIR);
                     player->m_pInventory->setSelectedItem(Item::bucket_water);
                     return true;
                 }
-                else if (level->getMaterial(tp) == Material::lava && level->getData(tp) == 0) 
+                else if (material == Material::lava && data == 0)
                 {
                     level->setTile(tp, TILE_AIR);
                     player->m_pInventory->setSelectedItem(Item::bucket_lava);
@@ -70,4 +76,3 @@ bool BucketItem::use(ItemStack& item, Level* level, Player* player) const
         return false;
     }
 }
-

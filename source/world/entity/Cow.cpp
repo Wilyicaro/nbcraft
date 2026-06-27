@@ -34,6 +34,6 @@ bool Cow::interact(Player* player)
 		player->m_pInventory->setSelectedItem(Item::milk);
 		return true;
 	}
-	else
-		return false;
+		
+	return false;
 }
