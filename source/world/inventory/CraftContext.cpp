@@ -69,10 +69,16 @@ bool CraftContext::craft(Recipe* recipe)
 		const ItemStack& ing = *it;
 		if (ing.isEmpty()) continue;
 		pInventory->removeIngredient(ing);
+		if (ing.getItem()->hasCraftingRemainingItem())
+		{
+			ItemStack remaining(ing.getItem()->getCraftingRemainingItem());
+			pInventory->add(remaining);
+		}
 	}
 
 	ItemStack resultItem = recipe->getResultItem();
 	pInventory->add(resultItem);
+
 
 	return true;
 }

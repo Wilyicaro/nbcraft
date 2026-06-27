@@ -19,7 +19,7 @@ bool BucketItem::use(ItemStack& item, Level* level, Player* player) const
     float var17 = Mth::sin(-player->m_rot.y * r);
     float var18 = var15 * var16;
     float var20 = var14 * var16;
-    HitResult hitResult = level->clip(headPos, headPos.add(var18 * 5, var17 * 5, var20 * 5), m_content == 0);
+    HitResult hitResult = level->clip(headPos, headPos.add(var18 * 5, var17 * 5, var20 * 5), m_content == TILE_AIR);
     if (!hitResult.isHit())
         return false;
     else
@@ -30,29 +30,23 @@ bool BucketItem::use(ItemStack& item, Level* level, Player* player) const
             if (!level->mayInteract(player, tp))
                 return false;
 
-            if (!m_content)
+            if (m_content == TILE_AIR)
             {
                 if (level->getMaterial(tp) == Material::water && level->getData(tp) == 0)
                 {
-                    level->setTile(tp, 0);
+                    level->setTile(tp, TILE_AIR);
                     player->m_pInventory->setSelectedItem(Item::bucket_water);
                     return true;
                 }
                 else if (level->getMaterial(tp) == Material::lava && level->getData(tp) == 0) 
                 {
-                    level->setTile(tp, 0);
+                    level->setTile(tp, TILE_AIR);
                     player->m_pInventory->setSelectedItem(Item::bucket_lava);
                     return true;
                 }
             }
             else
             {
-                if (m_content < 0)
-                {     
-                    player->m_pInventory->setSelectedItem(Item::bucket_empty);
-                    return true;
-                }
-
                 tp = tp.relative(hitResult.m_hitSide);
 
                 if (level->isEmptyTile(tp) || !level->getMaterial(tp)->isSolid())
@@ -71,11 +65,6 @@ bool BucketItem::use(ItemStack& item, Level* level, Player* player) const
                     return true;
                 }
             }
-        }
-        else if (m_content == 0 && hitResult.m_pEnt->getDescriptor().isType(EntityType::COW))
-        {
-            player->m_pInventory->setSelectedItem(Item::milk);
-            return true;
         }
 
         return false;

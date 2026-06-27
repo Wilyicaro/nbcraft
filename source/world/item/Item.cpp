@@ -479,8 +479,9 @@ void Item::initItems()
 
 	Item::milk = NEW_ITEM(ITEM_BUCKET_MILK)
 		->setIcon(13, 4)
-		->setDescriptionId("milk");
-		//->setCraftingRemainingItem(emptyBucket);
+		->setDescriptionId("milk")
+		->setMaxStackSize(1)
+		->setCraftingRemainingItem(bucket_empty);
 
 	Item::brick = NEW_ITEM(ITEM_BRICK)
 		->setIcon(6, 1)
