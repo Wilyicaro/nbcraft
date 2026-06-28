@@ -18,7 +18,7 @@ CameraItem::CameraItem(int id) : Item(id)
 {
 }
 
-bool CameraItem::use(ItemStack& item, Level* level, Mob& mob) const
+bool CameraItem::use(ItemStack& item, Level* level, Mob& user) const
 {
 #ifndef ORIGINAL_CODE
 	// prevent players from using this in multiplayer, to prevent a desync of entity IDs
@@ -26,8 +26,9 @@ bool CameraItem::use(ItemStack& item, Level* level, Mob& mob) const
 		return false;
 #endif
 
-	if (!mob.isPlayer())
+	if (!user.isPlayer())
+		return false;
 	
-	level->addEntity(new TripodCamera(level, static_cast<Player*>(&mob), mob.m_pos));
+	level->addEntity(new TripodCamera(level, static_cast<Player*>(&user), user.m_pos));
 	return false;
 }

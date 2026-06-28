@@ -620,7 +620,7 @@ float Item::getDestroySpeed(ItemStack* instance, const Tile* tile) const
 	return 1.0f;
 }
 
-bool Item::use(ItemStack& item, Level* level, Mob& mob) const
+bool Item::use(ItemStack& item, Level* level, Mob& user) const
 {
 	return false;
 }

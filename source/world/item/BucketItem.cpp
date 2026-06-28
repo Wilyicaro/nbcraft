@@ -9,12 +9,12 @@ BucketItem::BucketItem(int id, TileID content) : Item(id)
     m_content = content;
 }
 
-bool BucketItem::use(ItemStack& item, Level* level, Mob& mob) const
+bool BucketItem::use(ItemStack& item, Level* level, Mob& user) const
 {
-    if (!mob.isPlayer()) return false;
+    if (!user.isPlayer()) return false;
 
-    Player* player = static_cast<Player*>(&mob);
-    Vec3 headPos(mob.m_pos.x, mob.m_pos.y + 1.62f - mob.m_heightOffset, mob.m_pos.z);
+    Player* player = static_cast<Player*>(&user);
+    Vec3 headPos(user.m_pos.x, user.m_pos.y + 1.62f - user.m_heightOffset, user.m_pos.z);
     constexpr float r = M_PI / 180;
     float var14 = Mth::cos(-player->m_rot.x * r - M_PI);
     float var15 = Mth::sin(-player->m_rot.x * r - M_PI);
