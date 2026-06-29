@@ -144,6 +144,7 @@ add_library(nbcraft-core STATIC
     client/gui/screens/inventory/FurnaceScreen.cpp
     client/gui/screens/inventory/ChestScreen.cpp
 	  client/gui/screens/inventory/TrapScreen.cpp
+    client/gui/screens/inventory/TrapScreen_Console.cpp
     client/gui/screens/inventory/ClientCraftContext.cpp
     client/gui/components/ScrolledSelectionList.cpp
     client/gui/components/AvailableGamesList.cpp
