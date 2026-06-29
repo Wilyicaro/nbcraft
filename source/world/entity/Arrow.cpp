@@ -52,7 +52,7 @@ Arrow::Arrow(Level* pLevel, Mob* pMob)
     setPos(m_pos);
 
     m_vel.x = -Mth::sin(m_rot.yaw / 180.0f * M_PI) * Mth::cos(m_rot.pitch / 180.0f * M_PI);
-    m_vel.z = Mth::cos(m_rot.yaw / 180.0f * M_PI) * Mth::cos(m_rot.pitch / 180.0f * M_PI);
+    m_vel.z =  Mth::cos(m_rot.yaw / 180.0f * M_PI) * Mth::cos(m_rot.pitch / 180.0f * M_PI);
     m_vel.y = -Mth::sin(m_rot.pitch / 180.0f * M_PI);
     shoot(m_vel, 1.5f, 1.0f);
 }
