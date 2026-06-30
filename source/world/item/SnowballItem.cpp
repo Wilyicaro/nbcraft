@@ -1,6 +1,6 @@
 #include "SnowballItem.hpp"
 #include "world/level/Level.hpp"
-#include "world/entity/Snowball.hpp"
+#include "world/entity/projectile/Snowball.hpp"
 
 
 SnowballItem::SnowballItem(int itemID) : Item(itemID)

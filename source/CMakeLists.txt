@@ -312,9 +312,11 @@ add_library(nbcraft-core STATIC
     world/entity/Skeleton.cpp
     world/entity/Spider.cpp
     world/entity/Zombie.cpp
-    world/entity/Arrow.cpp
-  	world/entity/ThrownEgg.cpp
-  	world/entity/Snowball.cpp
+    world/entity/projectile/Arrow.cpp
+  	world/entity/projectile/ThrownEgg.cpp
+  	world/entity/projectile/Snowball.cpp
+    world/entity/projectile/Fireball.cpp
+    world/entity/projectile/FishingHook.cpp
     world/entity/WaterAnimal.cpp
     world/entity/Monster.cpp
     world/entity/Rocket.cpp
@@ -335,10 +337,8 @@ add_library(nbcraft-core STATIC
     world/entity/Giant.cpp
     world/entity/Slime.cpp
     world/entity/PigZombie.cpp
-    world/entity/Fireball.cpp
     world/entity/FlyingMob.cpp
     world/entity/Ghast.cpp
-    world/entity/FishingHook.cpp
     world/level/Dimension.cpp
     world/level/Material.cpp
     world/level/LevelListener.cpp

@@ -701,19 +701,17 @@ Rot2 Entity::getRot(float f) const
 
 Vec3 Entity::getViewVector(float f) const
 {
-	constexpr float C_PI = 3.1416f; // @HUH: Why not just use M_PI here?
-
 	if (f == 1.0)
 	{
-		Vec3 x(Mth::cos(-(m_rot.yaw * MTH_DEG_TO_RAD) - C_PI),
-			Mth::sin(-(m_rot.yaw * MTH_DEG_TO_RAD) - C_PI),
+		Vec3 x(Mth::cos(-(m_rot.yaw * MTH_DEG_TO_RAD) - M_PI),
+			Mth::sin(-(m_rot.yaw * MTH_DEG_TO_RAD) - M_PI),
 			-Mth::cos(-(m_rot.pitch * MTH_DEG_TO_RAD)));
 
-		return Vec3(x.x * x.z, Mth::sin(-(m_rot.pitch * MTH_DEG_TO_RAD)), x.y * x.z);
+		return Vec3(x.y * x.z, Mth::sin(-(m_rot.pitch * MTH_DEG_TO_RAD)), x.x * x.z);
 	}
 
 	float x1 = m_oRot.pitch + (m_rot.pitch - m_oRot.pitch) * f;
-	float x2 = -((m_oRot.yaw + (m_rot.yaw - m_oRot.yaw) * f) * MTH_DEG_TO_RAD) - C_PI;
+	float x2 = -((m_oRot.yaw + (m_rot.yaw - m_oRot.yaw) * f) * MTH_DEG_TO_RAD) - M_PI;
 	float x3 = Mth::cos(x2);
 	float x4 = Mth::sin(x2);
 	float x5 = -(x1 * MTH_DEG_TO_RAD);

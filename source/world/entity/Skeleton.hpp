@@ -1,7 +1,7 @@
 #pragma once
 
 #include "world/entity/Monster.hpp"
-#include "world/entity/Arrow.hpp"
+#include "world/entity/projectile/Arrow.hpp"
 
 class Skeleton : public Monster
 {

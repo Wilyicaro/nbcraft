@@ -6,11 +6,11 @@
 #include "ItemEntity.hpp"
 #include "PrimedTnt.hpp"
 #include "FallingTile.hpp"
-#include "Arrow.hpp"
-#include "Snowball.hpp"
-#include "ThrownEgg.hpp"
-#include "Fireball.hpp"
-#include "FishingHook.hpp"
+#include "projectile/Arrow.hpp"
+#include "projectile/Snowball.hpp"
+#include "projectile/ThrownEgg.hpp"
+#include "projectile/Fireball.hpp"
+#include "projectile/FishingHook.hpp"
 //#include "Painting.hpp"
 
 #define ENTS ENT(ITEM, ItemEntity) \

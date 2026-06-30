@@ -14,7 +14,7 @@
 #include "world/entity/ItemEntity.hpp"
 #include "world/gamemode/GameType.hpp"
 #include "world/inventory/InventoryMenu.hpp"
-#include "world/entity/FishingHook.hpp"
+#include "world/entity/projectile/FishingHook.hpp"
 
 #define C_PLAYER_FLAG_USING_ITEM (4)
 

@@ -1,5 +1,5 @@
 #include "FishingHook.hpp"
-#include "Mob.hpp"
+#include "world/entity/Mob.hpp"
 #include "nbt/CompoundTag.hpp"
 #include "world/level/Level.hpp"
 
@@ -369,28 +369,23 @@ int FishingHook::retrieve()
     int dmg = 0; // var1
     if (m_hookedIn)
     {
-        float var2 = m_owner->m_pos.x - m_pos.x;
-        float var4 = m_owner->m_pos.y - m_pos.y;
-        float var6 = m_owner->m_pos.z - m_pos.z;
-        float var8 = Mth::sqrt(var2 * var2 + var4 * var4 + var6 * var6);
-        float var10 = 0.1f;
-        m_hookedIn->m_vel.x += var2 * var10;
-        m_hookedIn->m_vel.y += var4 * var10 + Mth::sqrt(var8) * 0.08f;
-        m_hookedIn->m_vel.z += var6 * var10;
+        Vec3 diff = m_owner->m_pos - m_pos;
+        constexpr float v = 0.1f;
+        m_hookedIn->m_vel.x += diff.x * v;
+        m_hookedIn->m_vel.y += diff.y * v + Mth::sqrt(diff.length()) * 0.08f;
+        m_hookedIn->m_vel.z += diff.z * v;
         dmg = 3;
     }
     else if (m_nibble > 0)
     {
-        ItemEntity* var13 = new ItemEntity(m_pLevel, m_pos, ItemStack(Item::fish_raw));
-        float var3 = m_owner->m_pos.x - m_pos.x;
-        float var5 = m_owner->m_pos.y - m_pos.y;
-        float var7 = m_owner->m_pos.z - m_pos.z;
-        float var9 = Mth::sqrt(var3 * var3 + var5 * var5 + var7 * var7);
-        float var11 = 0.1f;
-        var13->m_vel.x = var3 * var11;
-        var13->m_vel.y = var5 * var11 + Mth::sqrt(var9) * 0.08f;
-        var13->m_vel.z = var7 * var11;
-        m_pLevel->addEntity(var13);
+        ItemEntity* item = new ItemEntity(m_pLevel, m_pos, ItemStack(Item::fish_raw));
+
+        Vec3 diff = m_owner->m_pos - m_pos;
+        constexpr float v = 0.1f;
+        item->m_vel.x = diff.x * v;
+        item->m_vel.y = diff.y * v + Mth::sqrt(diff.length()) * 0.08f;
+        item->m_vel.z = diff.z * v;
+        m_pLevel->addEntity(item);
         dmg = 1;
     }
 

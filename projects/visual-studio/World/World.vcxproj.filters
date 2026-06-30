@@ -111,6 +111,12 @@
     <Filter Include="Source Files\Tile\Entity">
       <UniqueIdentifier>{9dca9e2a-e126-4598-a852-105be172d198}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Entity\Projectile">
+      <UniqueIdentifier>{d245604a-6882-4b5b-9ff2-c1c4b04924b6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Entity\Projectile">
+      <UniqueIdentifier>{3a1b13f5-db35-4d40-a6b1-4e0aa6056f2a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="$(MC_ROOT)\source\world\entity\Entity.cpp">
@@ -581,9 +587,6 @@
     <ClCompile Include="$(MC_ROOT)\source\world\entity\Skeleton.cpp">
       <Filter>Source Files\Entity</Filter>
     </ClCompile>
-    <ClCompile Include="$(MC_ROOT)\source\world\entity\Arrow.cpp">
-      <Filter>Source Files\Entity</Filter>
-    </ClCompile>
     <ClCompile Include="$(MC_ROOT)\source\world\entity\EntityFactory.cpp">
       <Filter>Source Files\Entity</Filter>
     </ClCompile>
@@ -710,16 +713,10 @@
     <ClCompile Include="$(MC_ROOT)\source\world\tile\SnowTile.cpp">
       <Filter>Source Files\Tile</Filter>
     </ClCompile>
-    <ClCompile Include="$(MC_ROOT)\source\world\entity\Fireball.cpp">
-      <Filter>Source Files\Entity</Filter>
-    </ClCompile>
     <ClCompile Include="$(MC_ROOT)\source\world\entity\FlyingMob.cpp">
       <Filter>Source Files\Entity</Filter>
     </ClCompile>
     <ClCompile Include="$(MC_ROOT)\source\world\entity\Ghast.cpp">
-      <Filter>Source Files\Entity</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MC_ROOT)\source\world\entity\FishingHook.cpp">
       <Filter>Source Files\Entity</Filter>
     </ClCompile>
     <ClCompile Include="$(MC_ROOT)\source\world\item\FishingRodItem.cpp">
@@ -785,14 +782,8 @@
     <ClCompile Include="$(MC_ROOT)\source\world\item\EggItem.cpp">
       <Filter>Source Files\Item</Filter>
     </ClCompile>
-    <ClCompile Include="$(MC_ROOT)\source\world\entity\ThrownEgg.cpp">
-      <Filter>Source Files\Entity</Filter>
-    </ClCompile>
     <ClCompile Include="$(MC_ROOT)\source\world\particle\ItemParticle.cpp">
       <Filter>Source Files\Particle</Filter>
-    </ClCompile>
-    <ClCompile Include="$(MC_ROOT)\source\world\entity\Snowball.cpp">
-      <Filter>Source Files\Entity</Filter>
     </ClCompile>
     <ClCompile Include="$(MC_ROOT)\source\world\item\SnowballItem.cpp">
       <Filter>Source Files\Item</Filter>
@@ -829,6 +820,21 @@
     </ClCompile>
     <ClCompile Include="$(MC_ROOT)\source\world\phys\Rot2.cpp">
       <Filter>Source Files\Phys</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MC_ROOT)\source\world\entity\projectile\Snowball.cpp">
+      <Filter>Source Files\Entity\Projectile</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MC_ROOT)\source\world\entity\projectile\ThrownEgg.cpp">
+      <Filter>Source Files\Entity\Projectile</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MC_ROOT)\source\world\entity\projectile\Arrow.cpp">
+      <Filter>Source Files\Entity\Projectile</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MC_ROOT)\source\world\entity\projectile\Fireball.cpp">
+      <Filter>Source Files\Entity\Projectile</Filter>
+    </ClCompile>
+    <ClCompile Include="$(MC_ROOT)\source\world\entity\projectile\FishingHook.cpp">
+      <Filter>Source Files\Entity\Projectile</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -1237,9 +1243,6 @@
     <ClInclude Include="$(MC_ROOT)\source\world\entity\Skeleton.hpp">
       <Filter>Header Files\Entity</Filter>
     </ClInclude>
-    <ClInclude Include="$(MC_ROOT)\source\world\entity\Arrow.hpp">
-      <Filter>Header Files\Entity</Filter>
-    </ClInclude>
     <ClInclude Include="$(MC_ROOT)\source\world\entity\EntityFactory.hpp">
       <Filter>Header Files\Entity</Filter>
     </ClInclude>
@@ -1366,16 +1369,10 @@
     <ClInclude Include="$(MC_ROOT)\source\world\tile\SnowTile.hpp">
       <Filter>Header Files\Tile</Filter>
     </ClInclude>
-    <ClInclude Include="$(MC_ROOT)\source\world\entity\Fireball.hpp">
-      <Filter>Header Files\Entity</Filter>
-    </ClInclude>
     <ClInclude Include="$(MC_ROOT)\source\world\entity\FlyingMob.hpp">
       <Filter>Header Files\Entity</Filter>
     </ClInclude>
     <ClInclude Include="$(MC_ROOT)\source\world\entity\Ghast.hpp">
-      <Filter>Header Files\Entity</Filter>
-    </ClInclude>
-    <ClInclude Include="$(MC_ROOT)\source\world\entity\FishingHook.hpp">
       <Filter>Header Files\Entity</Filter>
     </ClInclude>
     <ClInclude Include="$(MC_ROOT)\source\world\item\FishingRodItem.hpp">
@@ -1441,12 +1438,6 @@
     <ClInclude Include="$(MC_ROOT)\source\world\item\EggItem.hpp">
       <Filter>Header Files\Item</Filter>
     </ClInclude>
-    <ClInclude Include="$(MC_ROOT)\source\world\entity\ThrownEgg.hpp">
-      <Filter>Header Files\Entity</Filter>
-    </ClInclude>
-    <ClInclude Include="$(MC_ROOT)\source\world\entity\Snowball.hpp">
-      <Filter>Header Files\Entity</Filter>
-    </ClInclude>
     <ClInclude Include="$(MC_ROOT)\source\world\item\SnowballItem.hpp">
       <Filter>Header Files\Item</Filter>
     </ClInclude>
@@ -1479,6 +1470,21 @@
     </ClInclude>
     <ClInclude Include="$(MC_ROOT)\source\world\phys\Rot2.hpp">
       <Filter>Header Files\Phys</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MC_ROOT)\source\world\entity\projectile\Arrow.hpp">
+      <Filter>Header Files\Entity\Projectile</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MC_ROOT)\source\world\entity\projectile\Fireball.hpp">
+      <Filter>Header Files\Entity\Projectile</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MC_ROOT)\source\world\entity\projectile\FishingHook.hpp">
+      <Filter>Header Files\Entity\Projectile</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MC_ROOT)\source\world\entity\projectile\Snowball.hpp">
+      <Filter>Header Files\Entity\Projectile</Filter>
+    </ClInclude>
+    <ClInclude Include="$(MC_ROOT)\source\world\entity\projectile\ThrownEgg.hpp">
+      <Filter>Header Files\Entity\Projectile</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

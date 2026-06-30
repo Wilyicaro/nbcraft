@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Entity.hpp"
+#include "world/entity/Entity.hpp"
 
 class Arrow : public Entity
 {
